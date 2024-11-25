@@ -169,7 +169,6 @@ function StatsCard({
   value,
   change,
   previousValue,
-  format = 'number',
   icon
 }: {
   title: string
