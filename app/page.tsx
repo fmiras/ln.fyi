@@ -124,19 +124,19 @@ export default async function Home({
                 <CardContent>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2 rounded-lg bg-orange-500/5 p-3">
-                      <p className="text-sm text-muted-foreground">Tor Nodes</p>
+                      <p className="text-sm text-muted-foreground">Tor</p>
                       <p className="text-xl font-bold text-orange-500">
                         {stats.latest.tor_nodes.toLocaleString()}
                       </p>
                     </div>
                     <div className="space-y-2 rounded-lg bg-orange-500/5 p-3">
-                      <p className="text-sm text-muted-foreground">Clearnet Nodes</p>
+                      <p className="text-sm text-muted-foreground">Clearnet</p>
                       <p className="text-xl font-bold text-orange-500">
                         {stats.latest.clearnet_nodes.toLocaleString()}
                       </p>
                     </div>
                     <div className="space-y-2 rounded-lg bg-orange-500/5 p-3">
-                      <p className="text-sm text-muted-foreground">Hybrid Nodes</p>
+                      <p className="text-sm text-muted-foreground">Hybrid</p>
                       <p className="text-xl font-bold text-orange-500">
                         {stats.latest.clearnet_tor_nodes.toLocaleString()}
                       </p>
