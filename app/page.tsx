@@ -3,7 +3,8 @@ import { ArrowUp, ArrowDown, Bitcoin, Zap, Network, Users } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ModeToggle } from '@/components/mode-toggle'
-import { getStats } from './actions'
+import { getStats, getStatsVariations } from './actions'
+import { NetworkChart } from './network-chart'
 
 function StatsCard({
   title,
@@ -52,6 +53,7 @@ function StatsCard({
 
 export default async function Home() {
   const stats = await getStats()
+  const historicalStats = await getStatsVariations() // Get last month's data
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/95 flex flex-col w-full items-center">
@@ -122,7 +124,7 @@ export default async function Home() {
           />
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-3">
           <Card className="border-orange-500/20">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -131,28 +133,28 @@ export default async function Home() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2 rounded-lg bg-orange-500/5 p-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2 rounded-lg bg-orange-500/5 p-3">
                   <p className="text-sm text-muted-foreground">Tor Nodes</p>
-                  <p className="text-2xl font-bold text-orange-500">
+                  <p className="text-xl font-bold text-orange-500">
                     {stats.latest.tor_nodes.toLocaleString()}
                   </p>
                 </div>
-                <div className="space-y-2 rounded-lg bg-orange-500/5 p-4">
+                <div className="space-y-2 rounded-lg bg-orange-500/5 p-3">
                   <p className="text-sm text-muted-foreground">Clearnet Nodes</p>
-                  <p className="text-2xl font-bold text-orange-500">
+                  <p className="text-xl font-bold text-orange-500">
                     {stats.latest.clearnet_nodes.toLocaleString()}
                   </p>
                 </div>
-                <div className="space-y-2 rounded-lg bg-orange-500/5 p-4">
+                <div className="space-y-2 rounded-lg bg-orange-500/5 p-3">
                   <p className="text-sm text-muted-foreground">Hybrid Nodes</p>
-                  <p className="text-2xl font-bold text-orange-500">
+                  <p className="text-xl font-bold text-orange-500">
                     {stats.latest.clearnet_tor_nodes.toLocaleString()}
                   </p>
                 </div>
-                <div className="space-y-2 rounded-lg bg-orange-500/5 p-4">
+                <div className="space-y-2 rounded-lg bg-orange-500/5 p-3">
                   <p className="text-sm text-muted-foreground">Unannounced</p>
-                  <p className="text-2xl font-bold text-orange-500">
+                  <p className="text-xl font-bold text-orange-500">
                     {stats.latest.unannounced_nodes.toLocaleString()}
                   </p>
                 </div>
@@ -160,17 +162,15 @@ export default async function Home() {
             </CardContent>
           </Card>
 
-          <Card className="border-orange-500/20">
+          <Card className="border-orange-500/20 md:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Zap className="h-5 w-5 text-orange-500" />
-                Network Growth
+                Network Capacity (BTC)
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="h-[200px] rounded-lg bg-orange-500/5 flex items-center justify-center">
-                <p className="text-muted-foreground">Network Growth Chart Coming Soon</p>
-              </div>
+            <CardContent className="h-[200px]">
+              <NetworkChart data={historicalStats} />
             </CardContent>
           </Card>
         </div>
