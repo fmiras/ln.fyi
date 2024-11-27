@@ -5,6 +5,51 @@ import { Badge } from '@/components/ui/badge'
 import { ModeToggle } from '@/components/mode-toggle'
 import { getStats } from './actions'
 
+function StatsCard({
+  title,
+  value,
+  change,
+  previousValue,
+  icon
+}: {
+  title: string
+  value: string
+  change: number
+  previousValue: number
+  format?: 'number' | 'btc'
+  icon?: React.ReactNode
+}) {
+  const percentChange = ((change / previousValue) * 100).toFixed(2)
+  const isPositive = change > 0
+
+  return (
+    <Card className="border-orange-500/20 transition-all hover:border-orange-500/40">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium flex items-center gap-2">
+          {icon}
+          {title}
+        </CardTitle>
+        <Badge
+          variant={isPositive ? 'default' : 'secondary'}
+          className={`px-2 py-1 ${
+            isPositive ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'
+          }`}
+        >
+          {isPositive ? (
+            <ArrowUp className="mr-1 h-4 w-4" />
+          ) : (
+            <ArrowDown className="mr-1 h-4 w-4" />
+          )}
+          {percentChange}%
+        </Badge>
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">{value}</div>
+      </CardContent>
+    </Card>
+  )
+}
+
 export default async function Home() {
   const stats = await getStats()
 
@@ -12,28 +57,18 @@ export default async function Home() {
     <div className="min-h-screen bg-gradient-to-b from-background to-background/95">
       <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
 
-      <main className="container relative mx-auto space-y-8 p-8">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-lg bg-orange-500/10 p-2 flex items-center justify-center">
-              <Bitcoin className="h-8 w-8 text-orange-500" />
-            </div>
-            <div>
-              <div className="flex items-baseline gap-2">
-                <a href="https://ln.fyi">
-                  <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-orange-500 to-yellow-500 bg-clip-text text-transparent">
-                    ln.fyi
-                  </h1>
-                </a>
-                <span className="text-muted-foreground">Lightning Network Stats</span>
-              </div>
-              <p className="text-muted-foreground">
-                Statistics for {new Date(stats.latest.added).toLocaleDateString()}
-              </p>
-            </div>
+      <main className="container relative p-4 sm:p-8 flex flex-col gap-6">
+        <header className="flex items-center justify-between pt-6">
+          <div className="flex items-center gap-2">
+            <Bitcoin className="h-5 w-5 text-orange-500" />
+            <a href="https://ln.fyi" className="hover:opacity-90 transition-opacity">
+              <h1 className="text-xl font-semibold text-foreground">ln.fyi</h1>
+            </a>
+            <span className="text-sm text-muted-foreground">/</span>
+            <span className="text-sm text-muted-foreground">network stats</span>
           </div>
           <ModeToggle />
-        </div>
+        </header>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <StatsCard
@@ -140,71 +175,6 @@ export default async function Home() {
           </Card>
         </div>
       </main>
-
-      {/* <footer className="container mx-auto p-8 border-t border-orange-500/20">
-        <div className="flex justify-between items-center text-sm text-muted-foreground">
-          <div className="flex gap-4">
-            <a href="/about" className="hover:text-orange-500 transition-colors">
-              About
-            </a>
-            <a href="/api" className="hover:text-orange-500 transition-colors">
-              API
-            </a>
-            <a
-              href="https://github.com/yourusername/ln.fyi"
-              className="hover:text-orange-500 transition-colors"
-            >
-              GitHub
-            </a>
-          </div>
-          <p>© {new Date().getFullYear()} ln.fyi</p>
-        </div>
-      </footer> */}
     </div>
-  )
-}
-
-function StatsCard({
-  title,
-  value,
-  change,
-  previousValue,
-  icon
-}: {
-  title: string
-  value: string
-  change: number
-  previousValue: number
-  format?: 'number' | 'btc'
-  icon?: React.ReactNode
-}) {
-  const percentChange = ((change / previousValue) * 100).toFixed(2)
-  const isPositive = change > 0
-
-  return (
-    <Card className="border-orange-500/20 transition-all hover:border-orange-500/40">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
-          {icon}
-          {title}
-        </CardTitle>
-        <Badge
-          variant={isPositive ? 'default' : 'secondary'}
-          className={`px-2 py-1 ${
-            isPositive ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'
-          }`}
-        >
-          {isPositive ? (
-            <ArrowUp className="mr-1 h-4 w-4" />
-          ) : (
-            <ArrowDown className="mr-1 h-4 w-4" />
-          )}
-          {percentChange}%
-        </Badge>
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-      </CardContent>
-    </Card>
   )
 }
