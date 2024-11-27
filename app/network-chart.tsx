@@ -19,7 +19,7 @@ export function NetworkChart({ data }: { data: any[] }) {
           color: 'hsl(var(--chart-1))'
         },
         capacity: {
-          label: 'Total Capacity (BTC)',
+          label: 'Total Capacity (BTC) ',
           color: 'hsl(var(--chart-2))'
         }
       }}

@@ -53,13 +53,13 @@ function StatsCard({
 
 export default async function Home() {
   const stats = await getStats()
-  const historicalStats = await getStatsVariations() // Get last month's data
+  const historicalStats = await getStatsVariations()
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/95 flex flex-col w-full items-center">
       <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
 
-      <main className="container relative p-4 sm:p-8 flex flex-col gap-6">
+      <main className="container relative p-4 sm:p-8 flex flex-col gap-8">
         <header className="flex items-center justify-between pt-6">
           <div className="flex items-center gap-2">
             <Bitcoin className="h-5 w-5 text-orange-500" />
@@ -72,107 +72,119 @@ export default async function Home() {
           <ModeToggle />
         </header>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <StatsCard
-            title="Total Nodes"
-            value={stats.latest.node_count.toLocaleString()}
-            change={stats.latest.node_count - stats.previous.node_count}
-            previousValue={stats.previous.node_count}
-            icon={<Users className="h-4 w-4 text-orange-500" />}
-          />
+        <div className="space-y-6">
+          <div className="w-full flex flex-col gap-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2 text-orange-500">
+              <Network className="h-5 w-5" />
+              Network Statistics
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <StatsCard
+                title="Total Nodes"
+                value={stats.latest.node_count.toLocaleString()}
+                change={stats.latest.node_count - stats.previous.node_count}
+                previousValue={stats.previous.node_count}
+                icon={<Users className="h-4 w-4 text-orange-500" />}
+              />
+              <StatsCard
+                title="Total Channels"
+                value={stats.latest.channel_count.toLocaleString()}
+                change={stats.latest.channel_count - stats.previous.channel_count}
+                previousValue={stats.previous.channel_count}
+                icon={<Network className="h-4 w-4 text-orange-500" />}
+              />
+              <StatsCard
+                title="Total Capacity"
+                value={`₿ ${(stats.latest.total_capacity / 100_000_000).toLocaleString()}`}
+                change={stats.latest.total_capacity - stats.previous.total_capacity}
+                previousValue={stats.previous.total_capacity}
+                format="btc"
+                icon={<Bitcoin className="h-4 w-4 text-orange-500" />}
+              />
+            </div>
 
-          <StatsCard
-            title="Total Channels"
-            value={stats.latest.channel_count.toLocaleString()}
-            change={stats.latest.channel_count - stats.previous.channel_count}
-            previousValue={stats.previous.channel_count}
-            icon={<Network className="h-4 w-4 text-orange-500" />}
-          />
+            <div className="grid gap-6 md:grid-cols-3 w-full">
+              <Card className="border-orange-500/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Network className="h-5 w-5 text-orange-500" />
+                    Node Distribution
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2 rounded-lg bg-orange-500/5 p-3">
+                      <p className="text-sm text-muted-foreground">Tor Nodes</p>
+                      <p className="text-xl font-bold text-orange-500">
+                        {stats.latest.tor_nodes.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="space-y-2 rounded-lg bg-orange-500/5 p-3">
+                      <p className="text-sm text-muted-foreground">Clearnet Nodes</p>
+                      <p className="text-xl font-bold text-orange-500">
+                        {stats.latest.clearnet_nodes.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="space-y-2 rounded-lg bg-orange-500/5 p-3">
+                      <p className="text-sm text-muted-foreground">Hybrid Nodes</p>
+                      <p className="text-xl font-bold text-orange-500">
+                        {stats.latest.clearnet_tor_nodes.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="space-y-2 rounded-lg bg-orange-500/5 p-3">
+                      <p className="text-sm text-muted-foreground">Unannounced</p>
+                      <p className="text-xl font-bold text-orange-500">
+                        {stats.latest.unannounced_nodes.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-          <StatsCard
-            title="Total Capacity"
-            value={`₿ ${(stats.latest.total_capacity / 100_000_000).toLocaleString()}`}
-            change={stats.latest.total_capacity - stats.previous.total_capacity}
-            previousValue={stats.previous.total_capacity}
-            format="btc"
-            icon={<Bitcoin className="h-4 w-4 text-orange-500" />}
-          />
+              <Card className="border-orange-500/20 md:col-span-2">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Zap className="h-5 w-5 text-orange-500" />
+                    Network Capacity (BTC)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="h-[200px]">
+                  <NetworkChart data={historicalStats} />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
 
-          <StatsCard
-            title="Average Capacity"
-            value={`₿ ${(stats.latest.avg_capacity / 100_000_000).toLocaleString()}`}
-            change={stats.latest.avg_capacity - stats.previous.avg_capacity}
-            previousValue={stats.previous.avg_capacity}
-            format="btc"
-            icon={<Bitcoin className="h-4 w-4 text-orange-500" />}
-          />
-
-          <StatsCard
-            title="Average Fee Rate"
-            value={`${stats.latest.avg_fee_rate} ppm`}
-            change={stats.latest.avg_fee_rate - stats.previous.avg_fee_rate}
-            previousValue={stats.previous.avg_fee_rate}
-            icon={<Zap className="h-4 w-4 text-orange-500" />}
-          />
-
-          <StatsCard
-            title="Median Base Fee"
-            value={`${stats.latest.med_base_fee_mtokens} msat`}
-            change={stats.latest.med_base_fee_mtokens - stats.previous.med_base_fee_mtokens}
-            previousValue={stats.previous.med_base_fee_mtokens}
-            icon={<Bitcoin className="h-4 w-4 text-orange-500" />}
-          />
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-3">
-          <Card className="border-orange-500/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Network className="h-5 w-5 text-orange-500" />
-                Node Distribution
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2 rounded-lg bg-orange-500/5 p-3">
-                  <p className="text-sm text-muted-foreground">Tor Nodes</p>
-                  <p className="text-xl font-bold text-orange-500">
-                    {stats.latest.tor_nodes.toLocaleString()}
-                  </p>
-                </div>
-                <div className="space-y-2 rounded-lg bg-orange-500/5 p-3">
-                  <p className="text-sm text-muted-foreground">Clearnet Nodes</p>
-                  <p className="text-xl font-bold text-orange-500">
-                    {stats.latest.clearnet_nodes.toLocaleString()}
-                  </p>
-                </div>
-                <div className="space-y-2 rounded-lg bg-orange-500/5 p-3">
-                  <p className="text-sm text-muted-foreground">Hybrid Nodes</p>
-                  <p className="text-xl font-bold text-orange-500">
-                    {stats.latest.clearnet_tor_nodes.toLocaleString()}
-                  </p>
-                </div>
-                <div className="space-y-2 rounded-lg bg-orange-500/5 p-3">
-                  <p className="text-sm text-muted-foreground">Unannounced</p>
-                  <p className="text-xl font-bold text-orange-500">
-                    {stats.latest.unannounced_nodes.toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-orange-500/20 md:col-span-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5 text-orange-500" />
-                Network Capacity (BTC)
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="h-[200px]">
-              <NetworkChart data={historicalStats} />
-            </CardContent>
-          </Card>
+          <div>
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-orange-500">
+              <Zap className="h-5 w-5" />
+              Channel Statistics
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <StatsCard
+                title="Average Capacity"
+                value={`₿ ${(stats.latest.avg_capacity / 100_000_000).toLocaleString()}`}
+                change={stats.latest.avg_capacity - stats.previous.avg_capacity}
+                previousValue={stats.previous.avg_capacity}
+                format="btc"
+                icon={<Bitcoin className="h-4 w-4 text-orange-500" />}
+              />
+              <StatsCard
+                title="Average Fee Rate"
+                value={`${stats.latest.avg_fee_rate} ppm`}
+                change={stats.latest.avg_fee_rate - stats.previous.avg_fee_rate}
+                previousValue={stats.previous.avg_fee_rate}
+                icon={<Zap className="h-4 w-4 text-orange-500" />}
+              />
+              <StatsCard
+                title="Median Base Fee"
+                value={`${stats.latest.med_base_fee_mtokens} msat`}
+                change={stats.latest.med_base_fee_mtokens - stats.previous.med_base_fee_mtokens}
+                previousValue={stats.previous.med_base_fee_mtokens}
+                icon={<Bitcoin className="h-4 w-4 text-orange-500" />}
+              />
+            </div>
+          </div>
         </div>
       </main>
     </div>
