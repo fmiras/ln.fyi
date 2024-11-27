@@ -4,11 +4,13 @@ import { LineChart, CartesianGrid, XAxis, Line, YAxis } from 'recharts'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 
 export function NetworkChart({ data }: { data: any[] }) {
-  const chartData = data.map((stat) => ({
-    date: new Date(stat.added * 1000).toLocaleDateString(),
-    nodes: stat.node_count,
-    capacity: parseFloat((stat.total_capacity / 100_000_000).toFixed(2))
-  }))
+  const chartData = data
+    .map((stat) => ({
+      date: new Date(stat.added * 1000).toLocaleDateString(),
+      nodes: stat.node_count,
+      capacity: parseFloat((stat.total_capacity / 100_000_000).toFixed(2))
+    }))
+    .reverse()
 
   return (
     <ChartContainer
