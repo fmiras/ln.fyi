@@ -3,9 +3,9 @@ import { ArrowUp, ArrowDown, Bitcoin, Zap, Network, Users } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ModeToggle } from '@/components/mode-toggle'
+import { IntervalToggle } from '@/components/interval-toggle'
 import { getStats, getStatsVariations, Interval, INTERVALS } from './actions'
 import { NetworkChart } from './network-chart'
-import { IntervalToggle } from '@/components/interval-toggle'
 
 function StatsCard({
   title,
