@@ -74,7 +74,6 @@ export default async function Home({
       <main className="container relative p-4 sm:p-8 flex flex-col gap-8">
         <header className="flex items-center justify-between pt-6">
           <div className="flex items-center gap-2">
-            <Bitcoin className="h-5 w-5 text-orange-500" />
             <a href="https://ln.fyi" className="hover:opacity-90 transition-opacity">
               <h1 className="text-xl font-semibold text-foreground">ln.fyi</h1>
             </a>
@@ -90,7 +89,6 @@ export default async function Home({
         <div className="space-y-6">
           <div className="w-full flex flex-col gap-4">
             <h2 className="text-lg font-semibold flex items-center gap-2 text-orange-500">
-              <Network className="h-5 w-5" />
               Network Statistics
             </h2>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -121,10 +119,7 @@ export default async function Home({
             <div className="grid gap-6 md:grid-cols-3 w-full">
               <Card className="border-orange-500/20">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Network className="h-5 w-5 text-orange-500" />
-                    Node Distribution
-                  </CardTitle>
+                  <CardTitle className="flex items-center gap-2">Node Distribution</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-4">
@@ -158,10 +153,7 @@ export default async function Home({
 
               <Card className="border-orange-500/20 md:col-span-2">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Zap className="h-5 w-5 text-orange-500" />
-                    Network Capacity (BTC)
-                  </CardTitle>
+                  <CardTitle className="flex items-center gap-2">Network Capacity (BTC)</CardTitle>
                 </CardHeader>
                 <CardContent className="h-[200px]">
                   <NetworkChart data={historicalStats} />
@@ -172,7 +164,6 @@ export default async function Home({
 
           <div>
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-orange-500">
-              <Zap className="h-5 w-5" />
               Channel Statistics
             </h2>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
