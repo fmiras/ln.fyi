@@ -3,8 +3,9 @@ import { ArrowUp, ArrowDown, Bitcoin, Zap, Network, Users } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ModeToggle } from '@/components/mode-toggle'
-import { getStats, getStatsVariations } from './actions'
+import { getStats, getStatsVariations, Interval, INTERVALS } from './actions'
 import { NetworkChart } from './network-chart'
+import { IntervalToggle } from '@/components/interval-toggle'
 
 function StatsCard({
   title,
@@ -51,9 +52,20 @@ function StatsCard({
   )
 }
 
-export default async function Home() {
+export default async function Home({
+  searchParams
+}: {
+  searchParams: Promise<{ interval?: string }>
+}) {
   const stats = await getStats()
-  const historicalStats = await getStatsVariations()
+  const search = await searchParams
+  const interval = search.interval
+    ? INTERVALS.includes(search.interval)
+      ? (search.interval as Interval)
+      : '1w'
+    : '1w'
+
+  const historicalStats = await getStatsVariations(interval)
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/95 flex flex-col w-full items-center">
@@ -69,7 +81,10 @@ export default async function Home() {
             <span className="text-sm text-muted-foreground">/</span>
             <span className="text-sm text-muted-foreground">network stats</span>
           </div>
-          <ModeToggle />
+          <div className="flex items-center gap-2">
+            <IntervalToggle currentInterval={interval} />
+            <ModeToggle />
+          </div>
         </header>
 
         <div className="space-y-6">
