@@ -1,19 +1,18 @@
 import type { Metadata } from 'next'
-import localFont from 'next/font/local'
+import { Geist } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/react'
-import { ThemeProvider } from '@/components/theme-provider'
+import { ThemeProvider } from 'next-themes'
 
 import './globals.css'
 
-const geistSans = localFont({
-  src: './fonts/GeistVF.woff',
-  variable: '--font-geist-sans',
-  weight: '100 900'
+const geistSans = Geist({
+  subsets: ['latin'],
+  variable: '--font-geist-sans'
 })
-const geistMono = localFont({
-  src: './fonts/GeistMonoVF.woff',
-  variable: '--font-geist-mono',
-  weight: '100 900'
+
+const geistMono = Geist({
+  subsets: ['latin'],
+  variable: '--font-geist-mono'
 })
 
 export const metadata: Metadata = {
@@ -27,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning={true}>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
