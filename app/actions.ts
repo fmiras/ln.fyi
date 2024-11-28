@@ -42,3 +42,32 @@ export async function getStatsVariations(interval: Interval): Promise<StatsVaria
     node_count: stat.tor_nodes + stat.clearnet_nodes + stat.unannounced_nodes
   }))
 }
+
+export type NodesRanking = {
+  topByCapacity: {
+    publicKey: string
+    alias: string
+    capacity: number
+  }[]
+  topByChannels: {
+    publicKey: string
+    alias: string
+    channels: number
+    city: string | null
+    country: {
+      de: string
+      en: string
+      es: string
+      fr: string
+    }
+    iso_code: string
+    subdivision: string | null
+  }[]
+}
+
+export async function getNodesRanking(): Promise<NodesRanking> {
+  const res = await fetch('https://mempool.space/api/v1/lightning/nodes/rankings')
+  const data: NodesRanking = await res.json()
+  console.log(data)
+  return data
+}

@@ -1,10 +1,10 @@
-import { ArrowUp, ArrowDown, Bitcoin, Zap, Network, Users } from 'lucide-react'
+import { ArrowUp, ArrowDown, Bitcoin, Zap, Network, Users, Trophy } from 'lucide-react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ModeToggle } from '@/components/mode-toggle'
 import { IntervalToggle } from '@/components/interval-toggle'
-import { getStats, getStatsVariations, Interval, INTERVALS } from './actions'
+import { getNodesRanking, getStats, getStatsVariations, Interval, INTERVALS } from './actions'
 import { NetworkChart } from './network-chart'
 
 function StatsCard({
@@ -71,6 +71,8 @@ export default async function Home({
     historicalStats[0]
   )
 
+  const { topByCapacity, topByChannels } = await getNodesRanking()
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/95 flex flex-col w-full items-center">
       <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
@@ -120,7 +122,7 @@ export default async function Home({
               />
             </div>
 
-            <div className="grid gap-6 md:grid-cols-3 w-full">
+            <div className="grid gap-4 md:grid-cols-3 w-full">
               <Card className="border-orange-500/20">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">Node Distribution</CardTitle>
@@ -193,6 +195,69 @@ export default async function Home({
                 previousValue={stats.previous.med_base_fee_mtokens}
                 icon={<Bitcoin className="h-4 w-4 text-orange-500" />}
               />
+            </div>
+          </div>
+
+          <div>
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-orange-500">
+              <Trophy className="h-5 w-5" />
+              Top Nodes
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card className="border-orange-500/20">
+                <CardHeader>
+                  <CardTitle>By Capacity</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    {topByCapacity.map((node, i) => (
+                      <div
+                        key={node.publicKey}
+                        className="flex items-center justify-between h-[40px]"
+                      >
+                        <div className="flex items-center gap-4">
+                          <span className="text-muted-foreground w-6">{i + 1}.</span>
+                          <span className="font-medium">{node.alias}</span>
+                        </div>
+                        <span className="text-orange-500 tabular-nums">
+                          ₿ {(node.capacity / 100_000_000).toLocaleString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-orange-500/20">
+                <CardHeader>
+                  <CardTitle>By Channels</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    {topByChannels.map((node, i) => (
+                      <div
+                        key={node.publicKey}
+                        className="flex items-center justify-between h-[40px]"
+                      >
+                        <div className="flex items-center gap-4">
+                          <span className="text-muted-foreground w-6">{i + 1}.</span>
+                          <div>
+                            <div className="font-medium leading-none">{node.alias}</div>
+                            {node.country && (
+                              <div className="text-sm text-muted-foreground mt-1">
+                                {node.country.en}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <span className="text-orange-500 tabular-nums">
+                          {node.channels.toLocaleString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
