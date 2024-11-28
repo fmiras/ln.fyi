@@ -66,6 +66,10 @@ export default async function Home({
     : '1w'
 
   const historicalStats = await getStatsVariations(interval)
+  const previous = historicalStats.reduce(
+    (acc, curr) => (acc.added < curr.added ? acc : curr),
+    historicalStats[0]
+  )
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/95 flex flex-col w-full items-center">
@@ -95,22 +99,22 @@ export default async function Home({
               <StatsCard
                 title="Total Nodes"
                 value={stats.latest.node_count.toLocaleString()}
-                change={stats.latest.node_count - stats.previous.node_count}
-                previousValue={stats.previous.node_count}
+                change={stats.latest.node_count - previous.node_count}
+                previousValue={previous.node_count}
                 icon={<Users className="h-4 w-4 text-orange-500" />}
               />
               <StatsCard
                 title="Total Channels"
                 value={stats.latest.channel_count.toLocaleString()}
-                change={stats.latest.channel_count - stats.previous.channel_count}
-                previousValue={stats.previous.channel_count}
+                change={stats.latest.channel_count - previous.channel_count}
+                previousValue={previous.channel_count}
                 icon={<Network className="h-4 w-4 text-orange-500" />}
               />
               <StatsCard
                 title="Total Capacity"
                 value={`₿ ${(stats.latest.total_capacity / 100_000_000).toLocaleString()}`}
-                change={stats.latest.total_capacity - stats.previous.total_capacity}
-                previousValue={stats.previous.total_capacity}
+                change={stats.latest.total_capacity - previous.total_capacity}
+                previousValue={previous.total_capacity}
                 format="btc"
                 icon={<Bitcoin className="h-4 w-4 text-orange-500" />}
               />
