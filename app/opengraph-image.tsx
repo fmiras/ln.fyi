@@ -67,8 +67,7 @@ export default async function Image() {
 
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div style={{ fontSize: '72px', fontWeight: '600', display: 'flex', gap: '16px' }}>
-              {(stats.latest.total_capacity / 100_000_000).toFixed(0)}
-              BTC
+              {(stats.latest.total_capacity / 100_000_000).toFixed(0)} BTC
             </div>
             <div style={{ color: '#666', fontSize: '32px' }}>Capacity</div>
           </div>
