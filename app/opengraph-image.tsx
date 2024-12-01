@@ -1,5 +1,6 @@
 import { ImageResponse } from 'next/og'
 import { Zap, Bitcoin, Network } from 'lucide-react'
+import { getStats } from './actions'
 
 export const runtime = 'edge'
 
@@ -12,9 +13,20 @@ export const size = {
 
 export const contentType = 'image/png'
 
+function formatNumber(num: number): string {
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1) + 'M'
+  }
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'K'
+  }
+  return num.toString()
+}
+
 export default async function Image() {
-  const geistBold = await fetch(new URL('./Geist-Bold.woff2', import.meta.url)).then((res) =>
-    res.arrayBuffer()
+  const stats = await getStats()
+  const geistBold = await fetch(new URL('../public/Geist-Bold.woff2', import.meta.url)).then(
+    (res) => res.arrayBuffer()
   )
 
   return new ImageResponse(
@@ -50,21 +62,22 @@ export default async function Image() {
         >
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div style={{ fontSize: '48px', fontWeight: '600' }}>
-              <Zap className="h-8 w-8 text-orange-500" /> 28.4k
+              <Zap className="h-8 w-8 text-orange-500" /> {formatNumber(stats.latest.node_count)}
             </div>
             <div style={{ color: '#666', fontSize: '24px' }}>Nodes</div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div style={{ fontSize: '48px', fontWeight: '600' }}>
-              <Bitcoin className="h-8 w-8 text-orange-500" /> 5,236
+              <Bitcoin className="h-8 w-8 text-orange-500" /> {stats.latest.total_capacity}
             </div>
             <div style={{ color: '#666', fontSize: '24px' }}>Capacity</div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div style={{ fontSize: '48px', fontWeight: '600' }}>
-              <Network className="h-8 w-8 text-orange-500" /> 84.7k
+              <Network className="h-8 w-8 text-orange-500" />{' '}
+              {formatNumber(stats.latest.channel_count)}
             </div>
             <div style={{ color: '#666', fontSize: '24px' }}>Channels</div>
           </div>
