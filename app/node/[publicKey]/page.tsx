@@ -1,12 +1,11 @@
 import Link from 'next/link'
-import { Clock, Globe, Radio, Signal, Info, ExternalLink } from 'lucide-react'
-import { Metadata, ResolvingMetadata } from 'next/types'
+import { Clock, Globe, Radio, Signal, ExternalLink } from 'lucide-react'
+import { Metadata } from 'next/types'
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
 import { ModeToggle } from '@/components/mode-toggle'
 import { NodeLocationMap } from '@/components/node-location-map'
 import { getLightningNode } from './actions'
@@ -76,31 +75,14 @@ export default async function NodePage({ params }: PageProps) {
           </div>
         </nav>
 
-        <section className="grid gap-6 md:grid-cols-4" aria-label="Node Overview">
-          <Card className="md:col-span-3">
+        <section className="flex gap-6" aria-label="Node Overview">
+          <Card className="w-full">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Radio className="w-4 h-4 text-orange-500" />
                   <CardTitle>{node.alias}</CardTitle>
                 </div>
-                <HoverCard>
-                  <HoverCardTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <Info className="h-4 w-4" />
-                    </Button>
-                  </HoverCardTrigger>
-                  <HoverCardContent className="w-80">
-                    <div className="flex justify-between space-x-4">
-                      <div className="space-y-1">
-                        <h4 className="text-sm font-semibold">Node Details</h4>
-                        <p className="text-sm text-muted-foreground">
-                          First seen on {new Date(node.first_seen * 1000).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                  </HoverCardContent>
-                </HoverCard>
               </div>
               <CardDescription className="font-mono text-xs">{node.public_key}</CardDescription>
             </CardHeader>
@@ -118,7 +100,7 @@ export default async function NodePage({ params }: PageProps) {
 
                 <Separator />
 
-                <div className="space-y-2">
+                <div className="space-y-4">
                   <div className="flex justify-between">
                     <div className="text-sm text-muted-foreground">Channel Utilization</div>
                     <span className="text-sm">{channelUtilization.toFixed(1)}%</span>
@@ -126,7 +108,7 @@ export default async function NodePage({ params }: PageProps) {
                   <Progress value={channelUtilization} className="h-2" />
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="flex justify-start gap-12">
                   <div>
                     <div className="text-sm text-muted-foreground">Capacity</div>
                     <div className="text-xl font-bold text-orange-500">
@@ -144,25 +126,25 @@ export default async function NodePage({ params }: PageProps) {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="max-w-[150px]">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Signal className="w-4 h-4" />
-                Channel Statistics
+                Channels
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
+                <div className="flex flex-col gap-4">
+                  <div className="space-y-2 flex flex-col items-center">
                     <div className="text-sm text-muted-foreground">Active</div>
                     <div className="text-2xl font-bold">{node.active_channel_count}</div>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 flex flex-col items-center">
                     <div className="text-sm text-muted-foreground">Opened</div>
                     <div className="text-2xl font-bold">{node.opened_channel_count}</div>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 flex flex-col items-center">
                     <div className="text-sm text-muted-foreground">Closed</div>
                     <div className="text-2xl font-bold">{node.closed_channel_count}</div>
                   </div>
@@ -172,49 +154,37 @@ export default async function NodePage({ params }: PageProps) {
           </Card>
         </section>
 
-        <section className="grid gap-6 md:grid-cols-2" aria-label="Node Details">
+        <section className="flex flex-col gap-6" aria-label="Node Details">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Clock className="w-4 h-4" /> Node Timeline & Details
+                <Radio className="w-4 h-4" /> Supported Features
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">First Seen</span>
-                    <span className="text-sm">
-                      {new Date(node.first_seen * 1000).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Last Update</span>
-                    <span className="text-sm">
-                      {new Date(node.updated_at * 1000).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <h3 className="text-sm font-semibold">Socket Addresses</h3>
-                  <div className="p-3 rounded-lg bg-muted font-mono text-xs break-all">
-                    {node.sockets}
-                  </div>
-                </div>
-
-                <Button variant="outline" className="w-full" asChild>
-                  <a
-                    href={`https://mempool.space/lightning/node/${node.public_key}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2"
-                  >
-                    View on Mempool.space
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                </Button>
+              <div className="flex flex-wrap gap-2">
+                {node.features
+                  .sort((a, b) => a.bit - b.bit)
+                  .map((feature) => (
+                    <div
+                      key={feature.bit}
+                      className="flex items-center gap-2 p-2 rounded-lg bg-muted"
+                    >
+                      <div
+                        className={`w-2 h-2 rounded-full ${
+                          feature.is_required ? 'bg-orange-500' : 'bg-green-500'
+                        }`}
+                      />
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium">
+                          {feature.name === 'unknown' ? `Unknown (${feature.bit})` : feature.name}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {feature.is_required ? 'Required' : 'Optional'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
               </div>
             </CardContent>
           </Card>
@@ -230,19 +200,6 @@ export default async function NodePage({ params }: PageProps) {
                 <div className="space-y-4">
                   <div className="h-[300px] rounded-lg overflow-hidden">
                     <NodeLocationMap lat={node.latitude} lng={node.longitude} />
-                  </div>
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-semibold">Network Information</h3>
-                    <div className="space-y-1">
-                      <div className="text-sm">
-                        <span className="text-muted-foreground">AS Organization: </span>
-                        {node.as_organization || 'Unknown'}
-                      </div>
-                      <div className="text-sm">
-                        <span className="text-muted-foreground">AS Number: </span>
-                        {node.as_number || 'Unknown'}
-                      </div>
-                    </div>
                   </div>
                 </div>
               ) : (

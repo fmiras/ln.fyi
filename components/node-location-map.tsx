@@ -13,8 +13,9 @@ const containerStyle = {
   borderRadius: '0.5rem'
 }
 
-// Replace with your Google Maps API key
-const GOOGLE_MAPS_API_KEY = 'YOUR_API_KEY'
+if (!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
+  throw new Error('NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is not set')
+}
 
 export function NodeLocationMap({ lat, lng }: NodeLocationMapProps) {
   const center = {
@@ -23,7 +24,7 @@ export function NodeLocationMap({ lat, lng }: NodeLocationMapProps) {
   }
 
   return (
-    <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY}>
+    <LoadScript googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}>
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={center}
