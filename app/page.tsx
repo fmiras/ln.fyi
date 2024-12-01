@@ -77,7 +77,7 @@ export default async function Home({
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/95 flex flex-col w-full items-center">
-      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
+      <div className="absolute inset-0 bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
 
       <main className="container relative p-4 sm:p-8 flex flex-col gap-8">
         <header className="flex items-center justify-between pt-6">
