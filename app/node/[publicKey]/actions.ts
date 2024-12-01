@@ -31,6 +31,11 @@ type LightningNodeWithMetadata = {
   capacity: number
   opened_channel_count: number
   closed_channel_count: number
+  features: {
+    bit: number
+    name: string
+    is_required: boolean
+  }[]
 }
 
 export async function getLightningNode(publicKey: string): Promise<LightningNodeWithMetadata> {

@@ -1,11 +1,10 @@
 import Link from 'next/link'
-import { Clock, Globe, Radio, Signal, ExternalLink } from 'lucide-react'
+import { Globe, Radio, Signal } from 'lucide-react'
 import { Metadata } from 'next/types'
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Progress } from '@/components/ui/progress'
-import { Button } from '@/components/ui/button'
 import { ModeToggle } from '@/components/mode-toggle'
 import { NodeLocationMap } from '@/components/node-location-map'
 import { getLightningNode } from './actions'
@@ -16,14 +15,7 @@ interface PageProps {
   }>
 }
 
-interface Props {
-  params: Promise<{
-    publicKey: string
-  }>
-  searchParams: { [key: string]: string | string[] | undefined }
-}
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const publicKey = (await params).publicKey
   const node = await getLightningNode(publicKey)
 
