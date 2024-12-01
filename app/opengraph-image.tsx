@@ -1,5 +1,4 @@
 import { ImageResponse } from 'next/og'
-import { Zap, Bitcoin, Network } from 'lucide-react'
 import { getStats } from './actions'
 
 export const runtime = 'edge'
@@ -44,7 +43,7 @@ export default async function Image() {
       >
         <div
           style={{
-            fontSize: '64px',
+            fontSize: '128px',
             fontWeight: '600',
             color: '#f97316'
           }}
@@ -61,25 +60,24 @@ export default async function Image() {
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ fontSize: '48px', fontWeight: '600', display: 'flex' }}>
-              <Zap className="h-8 w-8 text-orange-500" /> {formatNumber(stats.latest.node_count)}
+            <div style={{ fontSize: '96px', fontWeight: '600', display: 'flex', gap: '16px' }}>
+              ⚡️ {formatNumber(stats.latest.node_count)}
             </div>
-            <div style={{ color: '#666', fontSize: '24px' }}>Nodes</div>
+            <div style={{ color: '#666', fontSize: '32px' }}>Nodes</div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ fontSize: '48px', fontWeight: '600', display: 'flex' }}>
-              <Bitcoin className="h-8 w-8 text-orange-500" /> {stats.latest.total_capacity}
+            <div style={{ fontSize: '96px', fontWeight: '600', display: 'flex', gap: '16px' }}>
+              ₿ {stats.latest.total_capacity}
             </div>
-            <div style={{ color: '#666', fontSize: '24px' }}>Capacity</div>
+            <div style={{ color: '#666', fontSize: '32px' }}>Capacity</div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ fontSize: '48px', fontWeight: '600', display: 'flex' }}>
-              <Network className="h-8 w-8 text-orange-500" />{' '}
-              {formatNumber(stats.latest.channel_count)}
+            <div style={{ fontSize: '96px', fontWeight: '600', display: 'flex', gap: '16px' }}>
+              🔗 {formatNumber(stats.latest.channel_count)}
             </div>
-            <div style={{ color: '#666', fontSize: '24px' }}>Channels</div>
+            <div style={{ color: '#666', fontSize: '32px' }}>Channels</div>
           </div>
         </div>
       </div>
