@@ -1,6 +1,6 @@
 'use server'
 
-export const INTERVALS = ['24h', '3d', '1w', '1m', '3m', '6m', '1y', '2y', '3y']
+const INTERVALS = ['3d', '1w', '1m', '3m', '6m', '1y', '2y', '3y']
 
 export type Interval = (typeof INTERVALS)[number]
 
@@ -80,6 +80,5 @@ type NodesRanking = {
 export async function getNodesRanking(): Promise<NodesRanking> {
   const res = await fetch('https://mempool.space/api/v1/lightning/nodes/rankings')
   const data: NodesRanking = await res.json()
-  console.log(data)
   return data
 }

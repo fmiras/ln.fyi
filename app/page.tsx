@@ -4,8 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ModeToggle } from '@/components/mode-toggle'
 import { IntervalToggle } from '@/components/interval-toggle'
-import { getNodesRanking, getStats, getStatsVariations, Interval, INTERVALS } from './actions'
+import { getNodesRanking, getStats, getStatsVariations, Interval } from './actions'
 import { NetworkChart } from './network-chart'
+
+const INTERVALS = ['3d', '1w', '1m', '3m', '6m', '1y', '2y', '3y']
 
 function StatsCard({
   title,
