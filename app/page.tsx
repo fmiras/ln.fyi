@@ -212,13 +212,15 @@ export default async function Home({
           </section>
 
           <section aria-labelledby="top-nodes">
-            <h2
-              id="top-nodes"
-              className="text-lg font-semibold mb-4 flex items-center gap-2 text-orange-500"
-            >
-              <Trophy className="h-5 w-5" />
-              Top Nodes
-            </h2>
+            <Link href="/ranking">
+              <h2
+                id="top-nodes"
+                className="text-lg font-semibold mb-4 flex items-center gap-2 text-orange-500"
+              >
+                <Trophy className="h-5 w-5" />
+                Top Nodes
+              </h2>
+            </Link>
             <div className="grid gap-4 md:grid-cols-2">
               <Card className="border-orange-500/20">
                 <CardHeader>
@@ -227,9 +229,10 @@ export default async function Home({
                 <CardContent>
                   <div className="space-y-6">
                     {topByCapacity.map((node, i) => (
-                      <div
+                      <Link
                         key={node.publicKey}
-                        className="flex items-center justify-between h-[40px]"
+                        href={`/node/${node.publicKey}`}
+                        className="flex items-center justify-between h-[40px] hover:opacity-80 transition-opacity"
                       >
                         <div className="flex items-center gap-4">
                           <span className="text-muted-foreground w-6">{i + 1}.</span>
@@ -238,7 +241,7 @@ export default async function Home({
                         <span className="text-orange-500 tabular-nums">
                           ₿ {(node.capacity / 100_000_000).toLocaleString()}
                         </span>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 </CardContent>
@@ -251,9 +254,10 @@ export default async function Home({
                 <CardContent>
                   <div className="space-y-6">
                     {topByChannels.map((node, i) => (
-                      <div
+                      <Link
                         key={node.publicKey}
-                        className="flex items-center justify-between h-[40px]"
+                        href={`/node/${node.publicKey}`}
+                        className="flex items-center justify-between h-[40px] hover:opacity-80 transition-opacity"
                       >
                         <div className="flex items-center gap-4">
                           <span className="text-muted-foreground w-6">{i + 1}.</span>
@@ -269,7 +273,7 @@ export default async function Home({
                         <span className="text-orange-500 tabular-nums">
                           {node.channels.toLocaleString()}
                         </span>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 </CardContent>

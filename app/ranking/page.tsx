@@ -1,3 +1,4 @@
+import { Metadata } from 'next'
 import Link from 'next/link'
 import { Trophy } from 'lucide-react'
 
@@ -5,7 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ModeToggle } from '@/components/mode-toggle'
 import { getChannelRanking, getLiquidityRanking } from './actions'
 
-export default async function Home() {
+export const metadata: Metadata = {
+  title: 'ln.fyi | Ranking',
+  description: 'Lightning Network 100 top nodes by capacity and channels.'
+}
+
+export default async function RankingPage() {
   const topByCapacity = await getLiquidityRanking()
   const topByChannels = await getChannelRanking()
 
@@ -14,7 +20,7 @@ export default async function Home() {
       <div className="absolute inset-0 bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
 
       <main className="container relative p-4 sm:p-8 flex flex-col gap-8">
-        <header className="flex items-center justify-between pt-6">
+        <nav className="flex items-center justify-between pt-6">
           <div className="flex items-center gap-2">
             <Link href="/" className="hover:opacity-90 transition-opacity">
               <h1 className="text-xl font-semibold text-foreground">ln.fyi</h1>
@@ -27,13 +33,20 @@ export default async function Home() {
           <div className="flex items-center gap-2">
             <ModeToggle />
           </div>
-        </header>
+        </nav>
 
-        <div className="space-y-6">
-          <div>
+        <article className="space-y-6">
+          <section>
+            <h1 className="hidden text-2xl font-bold mb-4">Lightning Network Node Rankings</h1>
+            <p className="hidden text-muted-foreground mb-8">
+              Explore the top 100 Lightning Network nodes, ranked by their total Bitcoin capacity
+              and number of payment channels. Updated in real-time to show the largest and most
+              connected nodes in the network.
+            </p>
+
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-orange-500">
               <Trophy className="h-5 w-5" />
-              Top Nodes
+              Top 100 Lightning Network Nodes
             </h2>
             <div className="grid gap-4 md:grid-cols-2">
               <Card className="border-orange-500/20">
@@ -110,8 +123,8 @@ export default async function Home() {
                 </CardContent>
               </Card>
             </div>
-          </div>
-        </div>
+          </section>
+        </article>
       </main>
     </div>
   )
