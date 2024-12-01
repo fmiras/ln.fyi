@@ -44,8 +44,7 @@ export default async function Image() {
         <div
           style={{
             fontSize: '128px',
-            fontWeight: '600',
-            color: '#f97316'
+            fontWeight: '600'
           }}
         >
           ln.fyi
@@ -68,7 +67,8 @@ export default async function Image() {
 
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div style={{ fontSize: '96px', fontWeight: '600', display: 'flex', gap: '16px' }}>
-              ₿ {(stats.latest.total_capacity / 100_000_000).toFixed(2)}
+              <span style={{ color: '#f7931a' }}>₿</span>{' '}
+              {(stats.latest.total_capacity / 100_000_000).toFixed(2)}
             </div>
             <div style={{ color: '#666', fontSize: '32px' }}>Capacity</div>
           </div>
