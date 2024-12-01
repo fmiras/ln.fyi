@@ -1,9 +1,11 @@
+'use server'
+
 export const INTERVALS = ['24h', '3d', '1w', '1m', '3m', '6m', '1y', '2y', '3y']
 
 export type Interval = (typeof INTERVALS)[number]
 
 type LatestStatVariation = Omit<StatsVariation, 'added'> & {
-  added: string
+  added: string // date expressed in string
   avg_capacity: number
   avg_fee_rate: number
   avg_base_fee_mtokens: number
@@ -12,7 +14,7 @@ type LatestStatVariation = Omit<StatsVariation, 'added'> & {
   med_base_fee_mtokens: number
 }
 
-export type LatestStats = {
+type LatestStats = {
   latest: LatestStatVariation
   previous: LatestStatVariation
 }
@@ -23,7 +25,7 @@ export async function getStats(): Promise<LatestStats> {
   return data
 }
 
-export type StatsVariation = {
+type StatsVariation = {
   added: number // date expressed in number
   channel_count: number
   total_capacity: number
@@ -43,26 +45,36 @@ export async function getStatsVariations(interval: Interval): Promise<StatsVaria
   }))
 }
 
-export type NodesRanking = {
+type LightningNode = {
+  publicKey: string
+  alias: string
+  firstSeen: number
+  updatedAt: number
+  channels: number
+  capacity: number
+  city: {
+    de: string
+    en: string
+    es: string
+    fr: string
+  } | null
+  country: {
+    de: string
+    en: string
+    es: string
+    fr: string
+  } | null
+  iso_code: string | null
+  subdivision: string | null
+}
+
+type NodesRanking = {
   topByCapacity: {
     publicKey: string
     alias: string
     capacity: number
   }[]
-  topByChannels: {
-    publicKey: string
-    alias: string
-    channels: number
-    city: string | null
-    country: {
-      de: string
-      en: string
-      es: string
-      fr: string
-    }
-    iso_code: string
-    subdivision: string | null
-  }[]
+  topByChannels: LightningNode[]
 }
 
 export async function getNodesRanking(): Promise<NodesRanking> {
