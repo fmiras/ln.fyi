@@ -44,7 +44,7 @@ export default async function Home() {
                   <div className="space-y-6">
                     {topByCapacity.map((node, i) => (
                       <div key={node.publicKey} className="flex items-center justify-between">
-                        <a
+                        <Link
                           href={`/node/${node.publicKey}`}
                           className="flex items-center gap-4 hover:opacity-80 transition-opacity"
                         >
@@ -61,7 +61,7 @@ export default async function Home() {
                               )}
                             </div>
                           </div>
-                        </a>
+                        </Link>
                         <div className="text-right">
                           <div className="text-orange-500 tabular-nums">
                             ₿ {(node.capacity / 100_000_000).toLocaleString()}
@@ -81,7 +81,7 @@ export default async function Home() {
                   <div className="space-y-6">
                     {topByChannels.map((node, i) => (
                       <div key={node.publicKey} className="flex items-center justify-between">
-                        <a
+                        <Link
                           href={`/node/${node.publicKey}`}
                           className="flex items-center gap-4 hover:opacity-80 transition-opacity"
                         >
@@ -98,7 +98,7 @@ export default async function Home() {
                               )}
                             </div>
                           </div>
-                        </a>
+                        </Link>
                         <div className="text-right">
                           <div className="text-orange-500 tabular-nums">
                             {node.channels.toLocaleString()}
