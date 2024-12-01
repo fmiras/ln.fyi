@@ -7,8 +7,9 @@ import { ModeToggle } from '@/components/mode-toggle'
 import { getChannelRanking, getLiquidityRanking } from './actions'
 
 export const metadata: Metadata = {
-  title: 'ln.fyi | Ranking',
-  description: 'Lightning Network 100 top nodes by capacity and channels.'
+  title: 'Ranking - Top 100 Lightning Network Nodes - ln.fyi',
+  description:
+    'Lightning Network 100 top nodes by capacity and channels. Updated in real-time to show the largest and most connected nodes in the network.'
 }
 
 export default async function RankingPage() {

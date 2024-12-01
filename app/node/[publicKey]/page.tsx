@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Clock, Globe, Radio, Signal, Info, ExternalLink } from 'lucide-react'
+import { Metadata, ResolvingMetadata } from 'next/types'
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
@@ -16,6 +17,32 @@ interface PageProps {
   }>
 }
 
+interface Props {
+  params: Promise<{
+    publicKey: string
+  }>
+  searchParams: { [key: string]: string | string[] | undefined }
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const publicKey = (await params).publicKey
+  const node = await getLightningNode(publicKey)
+
+  return {
+    title: `${node.alias} - Lightning Network Node Details - ln.fyi`,
+    description: `View detailed statistics and information about Lightning Network node ${
+      node.alias
+    }. Capacity: ₿${(node.capacity / 100_000_000).toLocaleString()}, Active channels: ${
+      node.active_channel_count
+    }`,
+    openGraph: {
+      title: `${node.alias} - Lightning Network Node Details`,
+      description: `View detailed statistics and information about Lightning Network node ${node.alias}`,
+      type: 'website'
+    }
+  }
+}
+
 export default async function NodePage({ params }: PageProps) {
   const publicKey = (await params).publicKey
   const node = await getLightningNode(publicKey)
@@ -23,11 +50,11 @@ export default async function NodePage({ params }: PageProps) {
   const channelUtilization = (node.active_channel_count / node.opened_channel_count) * 100
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-background/95 flex flex-col w-full items-center">
+    <article className="min-h-screen bg-gradient-to-b from-background to-background/95 flex flex-col w-full items-center">
       <div className="absolute inset-0 bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
 
       <main className="container relative p-4 sm:p-8 flex flex-col gap-6">
-        <header className="flex items-center justify-between pt-6">
+        <nav className="flex items-center justify-between pt-6" aria-label="Breadcrumb">
           <div className="flex items-center gap-2">
             <Link href="/" className="hover:opacity-90 transition-opacity">
               <h1 className="text-xl font-semibold text-foreground">ln.fyi</h1>
@@ -47,9 +74,9 @@ export default async function NodePage({ params }: PageProps) {
           <div className="flex items-center gap-2">
             <ModeToggle />
           </div>
-        </header>
+        </nav>
 
-        <div className="grid gap-6 md:grid-cols-4">
+        <section className="grid gap-6 md:grid-cols-4" aria-label="Node Overview">
           <Card className="md:col-span-3">
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -143,9 +170,9 @@ export default async function NodePage({ params }: PageProps) {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </section>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <section className="grid gap-6 md:grid-cols-2" aria-label="Node Details">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -225,8 +252,8 @@ export default async function NodePage({ params }: PageProps) {
               )}
             </CardContent>
           </Card>
-        </div>
+        </section>
       </main>
-    </div>
+    </article>
   )
 }
