@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   description:
     'Real-time Lightning Network statistics including node count, channel capacity, fee rates, and top nodes by capacity and channels.',
   openGraph: {
-    title: 'ln.fyi| Lightning Network Statistics',
+    title: 'ln.fyi - Lightning Network Statistics',
     siteName: 'ln.fyi',
     description:
       'Real-time Lightning Network statistics including node count, channel capacity, fee rates, and top nodes by capacity and channels.',
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ln.fyi | Lightning Network Statistics',
+    title: 'ln.fyi - Lightning Network Statistics',
     description:
       'Real-time Lightning Network statistics including node count, channel capacity, fee rates, and top nodes by capacity and channels.',
     creator: '@fefomiras'

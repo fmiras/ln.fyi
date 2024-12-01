@@ -25,7 +25,7 @@ function formatNumber(num: number): string {
 
 export default async function Image() {
   const stats = await getStats()
-  const geistBold = await fetch(new URL('../public/Geist-Bold.woff2', import.meta.url)).then(
+  const geistSemiBold = await fetch(new URL('../public/Geist-SemiBold.ttf', import.meta.url)).then(
     (res) => res.arrayBuffer()
   )
 
@@ -89,7 +89,7 @@ export default async function Image() {
       fonts: [
         {
           name: 'Geist',
-          data: geistBold,
+          data: geistSemiBold,
           style: 'normal',
           weight: 600
         }
