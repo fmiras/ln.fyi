@@ -16,8 +16,25 @@ const geistMono = Geist({
 })
 
 export const metadata: Metadata = {
-  title: 'ln.fyi - Lightning Network Stats',
-  description: 'Lightning Network Statistics'
+  title: 'Lightning Network Statistics | ln.fyi',
+  description:
+    'Real-time Lightning Network statistics including node count, channel capacity, fee rates, and top nodes by capacity and channels.',
+  openGraph: {
+    title: 'ln.fyi| Lightning Network Statistics',
+    siteName: 'ln.fyi',
+    description:
+      'Real-time Lightning Network statistics including node count, channel capacity, fee rates, and top nodes by capacity and channels.',
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://ln.fyi'
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'ln.fyi | Lightning Network Statistics',
+    description:
+      'Real-time Lightning Network statistics including node count, channel capacity, fee rates, and top nodes by capacity and channels.',
+    creator: '@fefomiras'
+  }
 }
 
 export default function RootLayout({

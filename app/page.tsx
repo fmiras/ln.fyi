@@ -76,13 +76,16 @@ export default async function Home({
   const { topByCapacity, topByChannels } = await getNodesRanking()
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-background/95 flex flex-col w-full items-center">
+    <article
+      className="min-h-screen bg-gradient-to-b from-background to-background/95 flex flex-col w-full items-center"
+      aria-label="Lightning Network Statistics"
+    >
       <div className="absolute inset-0 bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
 
       <main className="container relative p-4 sm:p-8 flex flex-col gap-8">
-        <header className="flex items-center justify-between pt-6">
+        <nav className="flex items-center justify-between pt-6">
           <div className="flex items-center gap-2">
-            <Link href="/" className="hover:opacity-90 transition-opacity">
+            <Link href="/" className="hover:opacity-90 transition-opacity" aria-label="Home">
               <h1 className="text-xl font-semibold text-foreground">ln.fyi</h1>
             </Link>
             <span className="text-sm text-muted-foreground">/</span>
@@ -94,11 +97,14 @@ export default async function Home({
             <IntervalToggle currentInterval={interval} />
             <ModeToggle />
           </div>
-        </header>
+        </nav>
 
         <div className="space-y-6">
-          <div className="w-full flex flex-col gap-4">
-            <h2 className="text-lg font-semibold flex items-center gap-2 text-orange-500">
+          <section aria-labelledby="network-stats" className="w-full flex flex-col gap-4">
+            <h2
+              id="network-stats"
+              className="text-lg font-semibold flex items-center gap-2 text-orange-500"
+            >
               Network Statistics
             </h2>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -170,10 +176,13 @@ export default async function Home({
                 </CardContent>
               </Card>
             </div>
-          </div>
+          </section>
 
-          <div>
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-orange-500">
+          <section aria-labelledby="channel-stats">
+            <h2
+              id="channel-stats"
+              className="text-lg font-semibold mb-4 flex items-center gap-2 text-orange-500"
+            >
               Channel Statistics
             </h2>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -200,10 +209,13 @@ export default async function Home({
                 icon={<Bitcoin className="h-4 w-4 text-orange-500" />}
               />
             </div>
-          </div>
+          </section>
 
-          <div>
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-orange-500">
+          <section aria-labelledby="top-nodes">
+            <h2
+              id="top-nodes"
+              className="text-lg font-semibold mb-4 flex items-center gap-2 text-orange-500"
+            >
               <Trophy className="h-5 w-5" />
               Top Nodes
             </h2>
@@ -263,9 +275,9 @@ export default async function Home({
                 </CardContent>
               </Card>
             </div>
-          </div>
+          </section>
         </div>
       </main>
-    </div>
+    </article>
   )
 }
