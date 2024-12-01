@@ -59,22 +59,22 @@ export default async function Image() {
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ fontSize: '96px', fontWeight: '600', display: 'flex', gap: '16px' }}>
+            <div style={{ fontSize: '72px', fontWeight: '600', display: 'flex', gap: '16px' }}>
               ⚡️ {formatNumber(stats.latest.node_count)}
             </div>
             <div style={{ color: '#666', fontSize: '32px' }}>Nodes</div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ fontSize: '96px', fontWeight: '600', display: 'flex', gap: '16px' }}>
-              <span style={{ color: '#f7931a' }}>₿</span>{' '}
-              {(stats.latest.total_capacity / 100_000_000).toFixed(2)}
+            <div style={{ fontSize: '72px', fontWeight: '600', display: 'flex', gap: '16px' }}>
+              {(stats.latest.total_capacity / 100_000_000).toFixed(0)}
+              BTC
             </div>
             <div style={{ color: '#666', fontSize: '32px' }}>Capacity</div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ fontSize: '96px', fontWeight: '600', display: 'flex', gap: '16px' }}>
+            <div style={{ fontSize: '72px', fontWeight: '600', display: 'flex', gap: '16px' }}>
               🔗 {formatNumber(stats.latest.channel_count)}
             </div>
             <div style={{ color: '#666', fontSize: '32px' }}>Channels</div>
