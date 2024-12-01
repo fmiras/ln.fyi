@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { Clock, Globe, Radio, Signal, Info, ExternalLink } from 'lucide-react'
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -28,15 +29,20 @@ export default async function NodePage({ params }: PageProps) {
       <main className="container relative p-4 sm:p-8 flex flex-col gap-6">
         <header className="flex items-center justify-between pt-6">
           <div className="flex items-center gap-2">
-            <a href="https://ln.fyi" className="hover:opacity-90 transition-opacity">
+            <Link href="/" className="hover:opacity-90 transition-opacity">
               <h1 className="text-xl font-semibold text-foreground">ln.fyi</h1>
-            </a>
+            </Link>
             <span className="text-sm text-muted-foreground">/</span>
-            <a href="/ranking" className="text-sm text-muted-foreground hover:text-foreground">
+            <Link href="/ranking" className="text-sm text-muted-foreground hover:text-foreground">
               ranking
-            </a>
+            </Link>
             <span className="text-sm text-muted-foreground">/</span>
-            <span className="text-sm text-muted-foreground">node</span>
+            <Link
+              href={`/node/${publicKey}`}
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              node
+            </Link>
           </div>
           <div className="flex items-center gap-2">
             <ModeToggle />

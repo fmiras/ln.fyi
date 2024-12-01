@@ -1,3 +1,4 @@
+import { INTERVALS } from '@/lib/types'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -5,8 +6,6 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
-
-const INTERVALS = ['3d', '1w', '1m', '3m', '6m', '1y', '2y', '3y']
 
 export function IntervalToggle({ currentInterval = '1w' }: { currentInterval?: string }) {
   return (

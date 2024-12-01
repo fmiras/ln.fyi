@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { Trophy } from 'lucide-react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -15,11 +16,13 @@ export default async function Home() {
       <main className="container relative p-4 sm:p-8 flex flex-col gap-8">
         <header className="flex items-center justify-between pt-6">
           <div className="flex items-center gap-2">
-            <a href="/" className="hover:opacity-90 transition-opacity">
+            <Link href="/" className="hover:opacity-90 transition-opacity">
               <h1 className="text-xl font-semibold text-foreground">ln.fyi</h1>
-            </a>
+            </Link>
             <span className="text-sm text-muted-foreground">/</span>
-            <span className="text-sm text-muted-foreground">ranking</span>
+            <Link href="/ranking" className="text-sm text-muted-foreground hover:text-foreground">
+              ranking
+            </Link>
           </div>
           <div className="flex items-center gap-2">
             <ModeToggle />

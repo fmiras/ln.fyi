@@ -1,8 +1,6 @@
 'use server'
 
-const INTERVALS = ['3d', '1w', '1m', '3m', '6m', '1y', '2y', '3y']
-
-export type Interval = (typeof INTERVALS)[number]
+import { Interval } from '../lib/types'
 
 type LatestStatVariation = Omit<StatsVariation, 'added'> & {
   added: string // date expressed in string
@@ -25,7 +23,7 @@ export async function getStats(): Promise<LatestStats> {
   return data
 }
 
-type StatsVariation = {
+export type StatsVariation = {
   added: number // date expressed in number
   channel_count: number
   total_capacity: number

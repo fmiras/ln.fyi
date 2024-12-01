@@ -2,8 +2,9 @@
 import { LineChart, CartesianGrid, XAxis, Line, YAxis } from 'recharts'
 
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
+import { StatsVariation } from './actions'
 
-export function NetworkChart({ data }: { data: any[] }) {
+export function NetworkChart({ data }: { data: StatsVariation[] }) {
   const chartData = data
     .map((stat) => ({
       date: new Date(stat.added * 1000).toLocaleDateString(),

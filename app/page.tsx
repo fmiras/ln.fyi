@@ -1,13 +1,13 @@
+import Link from 'next/link'
 import { ArrowUp, ArrowDown, Bitcoin, Zap, Network, Users, Trophy } from 'lucide-react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ModeToggle } from '@/components/mode-toggle'
 import { IntervalToggle } from '@/components/interval-toggle'
-import { getNodesRanking, getStats, getStatsVariations, Interval } from './actions'
+import { getNodesRanking, getStats, getStatsVariations } from './actions'
 import { NetworkChart } from './network-chart'
-
-const INTERVALS = ['3d', '1w', '1m', '3m', '6m', '1y', '2y', '3y']
+import { Interval, INTERVALS } from '../lib/types'
 
 function StatsCard({
   title,
@@ -82,11 +82,13 @@ export default async function Home({
       <main className="container relative p-4 sm:p-8 flex flex-col gap-8">
         <header className="flex items-center justify-between pt-6">
           <div className="flex items-center gap-2">
-            <a href="https://ln.fyi" className="hover:opacity-90 transition-opacity">
+            <Link href="/" className="hover:opacity-90 transition-opacity">
               <h1 className="text-xl font-semibold text-foreground">ln.fyi</h1>
-            </a>
+            </Link>
             <span className="text-sm text-muted-foreground">/</span>
-            <span className="text-sm text-muted-foreground">network stats</span>
+            <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
+              network stats
+            </Link>
           </div>
           <div className="flex items-center gap-2">
             <IntervalToggle currentInterval={interval} />
