@@ -1,26 +1,23 @@
-'use client'
+import { Clock, Globe, Radio, Signal, Info, ExternalLink } from 'lucide-react'
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
-import dynamic from 'next/dynamic'
-import { Clock, Globe, Radio, Signal, Info, ExternalLink } from 'lucide-react'
-
-const NodeLocationMap = dynamic(() => import('./components/NodeLocationMap'), { ssr: false })
-
-import { getLightningNode } from './actions'
 import { ModeToggle } from '@/components/mode-toggle'
+import { NodeLocationMap } from '@/components/node-location-map'
+import { getLightningNode } from './actions'
 
 interface PageProps {
-  params: {
+  params: Promise<{
     publicKey: string
-  }
+  }>
 }
 
 export default async function NodePage({ params }: PageProps) {
-  const node = await getLightningNode(params.publicKey)
+  const publicKey = (await params).publicKey
+  const node = await getLightningNode(publicKey)
 
   const channelUtilization = (node.active_channel_count / node.opened_channel_count) * 100
 

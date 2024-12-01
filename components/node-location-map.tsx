@@ -16,7 +16,7 @@ const containerStyle = {
 // Replace with your Google Maps API key
 const GOOGLE_MAPS_API_KEY = 'YOUR_API_KEY'
 
-export default function NodeLocationMap({ lat, lng }: NodeLocationMapProps) {
+export function NodeLocationMap({ lat, lng }: NodeLocationMapProps) {
   const center = {
     lat: lat,
     lng: lng
