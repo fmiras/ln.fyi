@@ -67,7 +67,7 @@ export default async function NodePage({ params }: PageProps) {
           </div>
         </nav>
 
-        <section className="flex gap-6" aria-label="Node Overview">
+        <section className="flex flex-col md:flex-row gap-6" aria-label="Node Overview">
           <Card className="w-full">
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -76,7 +76,12 @@ export default async function NodePage({ params }: PageProps) {
                   <CardTitle>{node.alias}</CardTitle>
                 </div>
               </div>
-              <CardDescription className="font-mono text-xs">{node.public_key}</CardDescription>
+              <CardDescription className="font-mono text-xs">
+                <span className="hidden sm:inline">{node.public_key}</span>
+                <span className="sm:hidden">
+                  {node.public_key.slice(0, 12)}...{node.public_key.slice(-12)}
+                </span>
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -118,7 +123,7 @@ export default async function NodePage({ params }: PageProps) {
             </CardContent>
           </Card>
 
-          <Card className="max-w-[150px]">
+          <Card className="md:max-w-[150px]">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Signal className="w-4 h-4" />
