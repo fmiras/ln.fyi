@@ -25,9 +25,9 @@ function formatNumber(num: number): string {
 export default async function Image({ params }: { params: Promise<{ publicKey: string }> }) {
   const publicKey = (await params).publicKey
   const node = await getLightningNode(publicKey)
-  const geistSemiBold = await fetch(new URL('../public/Geist-SemiBold.ttf', import.meta.url)).then(
-    (res) => res.arrayBuffer()
-  )
+  const geistSemiBold = await fetch(
+    new URL('../../../public/Geist-SemiBold.ttf', import.meta.url)
+  ).then((res) => res.arrayBuffer())
 
   return new ImageResponse(
     (
