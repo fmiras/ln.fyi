@@ -169,7 +169,7 @@ export default async function Home({
 
               <Card className="border-orange-500/20 md:col-span-2">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">Network Capacity (BTC)</CardTitle>
+                  <CardTitle className="flex items-center gap-2">Network Channels</CardTitle>
                 </CardHeader>
                 <CardContent className="h-[200px]">
                   <NetworkChart data={historicalStats} />

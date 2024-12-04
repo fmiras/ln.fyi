@@ -9,7 +9,7 @@ export function NetworkChart({ data }: { data: StatsVariation[] }) {
     .map((stat) => ({
       date: new Date(stat.added * 1000).toLocaleDateString(),
       nodes: stat.node_count,
-      capacity: parseFloat((stat.total_capacity / 100_000_000).toFixed(2))
+      channels: stat.channel_count
     }))
     .reverse()
 
@@ -21,8 +21,8 @@ export function NetworkChart({ data }: { data: StatsVariation[] }) {
           label: 'Total Nodes',
           color: 'hsl(var(--chart-1))'
         },
-        capacity: {
-          label: 'Total Capacity (BTC) ',
+        channels: {
+          label: 'Total Channels',
           color: 'hsl(var(--chart-2))'
         }
       }}
@@ -40,22 +40,25 @@ export function NetworkChart({ data }: { data: StatsVariation[] }) {
           axisLine={false}
           tickMargin={12}
           stroke="hsl(var(--foreground))"
-          tickFormatter={(value) => value.slice(0, 5)}
+          tickFormatter={(value) => {
+            // Assuming value is in format "MM/DD/YYYY"
+            return value.split('/').slice(0, 2).join('/') // Only keep MM/DD
+          }}
+          interval={6}
         />
         <YAxis
-          dataKey="capacity"
+          dataKey="channels"
           orientation="right"
           stroke="hsl(var(--chart-2))"
           tickLine={false}
           axisLine={false}
           tickMargin={12}
-          domain={[4000, 6000]}
           tickFormatter={(value) => `${value}`}
         />
         <ChartTooltip content={<ChartTooltipContent />} />
 
         <Line
-          dataKey="capacity"
+          dataKey="channels"
           type="monotone"
           stroke="hsl(var(--chart-2))"
           strokeWidth={3}

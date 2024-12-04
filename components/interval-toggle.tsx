@@ -15,20 +15,16 @@ export function IntervalToggle({ currentInterval = '1w' }: { currentInterval?: s
           {INTERVALS.includes(currentInterval) ? currentInterval : '1w'}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-2">
+      <DropdownMenuContent align="end" className="min-w-[50px]">
         {INTERVALS.map((interval) => (
-          <DropdownMenuItem asChild key={interval}>
-            <form key={interval}>
-              <button
-                type="submit"
-                name="interval"
-                value={interval}
-                className="w-full flex items-center cursor-pointer"
-              >
+          <form action="" key={interval}>
+            <input type="hidden" name="interval" value={interval} />
+            <DropdownMenuItem asChild>
+              <button type="submit" className="w-full text-left">
                 {interval}
               </button>
-            </form>
-          </DropdownMenuItem>
+            </DropdownMenuItem>
+          </form>
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
