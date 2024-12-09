@@ -1,60 +1,13 @@
 import Link from 'next/link'
-import { ArrowUp, ArrowDown, Bitcoin, Zap, Network, Users, Trophy } from 'lucide-react'
+import { Bitcoin, Zap, Network, Users, Trophy } from 'lucide-react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { ModeToggle } from '@/components/mode-toggle'
 import { IntervalToggle } from '@/components/interval-toggle'
-import { getNodesRanking, getStats, getStatsVariations } from './actions'
+import { getNodesRanking, getStats, getStatsVariations, StatsVariation } from './actions'
 import { NetworkChart } from './network-chart'
 import { Interval, INTERVALS } from '../lib/types'
-
-function StatsCard({
-  title,
-  value,
-  change,
-  previousValue,
-  icon
-}: {
-  title: string
-  value: string
-  change: number
-  previousValue: number
-  format?: 'number' | 'btc'
-  icon?: React.ReactNode
-}) {
-  const percentChange = ((change / previousValue) * 100).toFixed(2)
-  const isPositive = change > 0
-
-  return (
-    <Card className="border-orange-500/20 transition-all hover:border-orange-500/40">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
-          {icon}
-          {title}
-        </CardTitle>
-        {change !== 0 && (
-          <Badge
-            variant={isPositive ? 'default' : 'secondary'}
-            className={`px-2 py-1 ${
-              isPositive ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'
-            }`}
-          >
-            {isPositive ? (
-              <ArrowUp className="mr-1 h-4 w-4" />
-            ) : (
-              <ArrowDown className="mr-1 h-4 w-4" />
-            )}
-            {percentChange}%
-          </Badge>
-        )}
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-      </CardContent>
-    </Card>
-  )
-}
+import { StatsCard } from './stats-card'
 
 export default async function Home({
   searchParams
@@ -67,14 +20,15 @@ export default async function Home({
   const interval = search.interval
     ? INTERVALS.includes(search.interval)
       ? (search.interval as Interval)
-      : '1w'
-    : '1w'
+      : '3m'
+    : '3m'
 
   const historicalStats = await getStatsVariations(interval)
-  const previous = historicalStats.reduce(
+  const previous: StatsVariation | null = historicalStats.reduce(
     (acc, curr) => (acc.added < curr.added ? acc : curr),
-    historicalStats[0] || {}
+    historicalStats[0] || null
   )
+  console.debug('[getStatsVariations] previous', previous)
 
   const { topByCapacity, topByChannels } = await getNodesRanking()
 
@@ -114,24 +68,22 @@ export default async function Home({
               <StatsCard
                 title="Total Nodes"
                 value={stats.latest.node_count.toLocaleString()}
-                change={stats.previous ? stats.latest.node_count - previous.node_count : 0}
-                previousValue={stats.previous ? previous.node_count : stats.latest.node_count}
+                change={previous ? stats.latest.node_count - previous.node_count : 0}
+                previousValue={previous ? previous.node_count : stats.latest.node_count}
                 icon={<Users className="h-4 w-4 text-orange-500" />}
               />
               <StatsCard
                 title="Total Channels"
                 value={stats.latest.channel_count.toLocaleString()}
-                change={stats.previous ? stats.latest.channel_count - previous.channel_count : 0}
-                previousValue={stats.previous ? previous.channel_count : stats.latest.channel_count}
+                change={previous ? stats.latest.channel_count - previous.channel_count : 0}
+                previousValue={previous ? previous.channel_count : stats.latest.channel_count}
                 icon={<Network className="h-4 w-4 text-orange-500" />}
               />
               <StatsCard
                 title="Total Capacity"
                 value={`₿ ${(stats.latest.total_capacity / 100_000_000).toLocaleString()}`}
-                change={stats.previous ? stats.latest.total_capacity - previous.total_capacity : 0}
-                previousValue={
-                  stats.previous ? previous.total_capacity : stats.latest.total_capacity
-                }
+                change={previous ? stats.latest.total_capacity - previous.total_capacity : 0}
+                previousValue={previous ? previous.total_capacity : stats.latest.total_capacity}
                 format="btc"
                 icon={<Bitcoin className="h-4 w-4 text-orange-500" />}
               />
