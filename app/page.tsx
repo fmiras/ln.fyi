@@ -106,6 +106,10 @@ export default async function Home({
               <StatsCard
                 title="Total Capacity"
                 value={`₿ ${(stats.latest.total_capacity / 100_000_000).toLocaleString()}`}
+                hoverValue={`${(
+                  (stats.latest.total_capacity / 100_000_000 / 21_000_000) *
+                  100
+                ).toFixed(4)}% of supply`}
                 change={previous ? stats.latest.total_capacity - previous.total_capacity : 0}
                 previousValue={previous ? previous.total_capacity : stats.latest.total_capacity}
                 format="btc"

@@ -1,12 +1,16 @@
+'use client'
+
 import { ArrowUp, ArrowDown, HelpCircle } from 'lucide-react'
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { useState } from 'react'
 
 export function StatsCard({
   title,
   value,
+  hoverValue,
   change,
   previousValue,
   icon,
@@ -14,12 +18,14 @@ export function StatsCard({
 }: {
   title: string
   value: string
+  hoverValue?: string
   change: number
   previousValue: number
   format?: 'number' | 'btc'
   icon?: React.ReactNode
   tooltip?: string
 }) {
+  const [isHovered, setIsHovered] = useState(false)
   const percentChange = ((change / previousValue) * 100).toFixed(2)
   const isPositive = change > 0
 
@@ -64,8 +70,8 @@ export function StatsCard({
           </Badge>
         )}
       </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
+      <CardContent onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
+        <div className="text-2xl font-bold">{isHovered && hoverValue ? hoverValue : value}</div>
       </CardContent>
     </Card>
   )
