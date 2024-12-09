@@ -266,6 +266,7 @@ export default async function Home({
                   stats.previous ? stats.previous.avg_fee_rate : stats.latest.avg_fee_rate
                 }
                 icon={<Zap className="h-4 w-4 text-orange-500" />}
+                tooltip="Parts Per Million (PPM) represents the proportional fee charged for routing payments. For example, 1000 PPM = 0.1% fee."
               />
               <StatsCard
                 title="Median Base Fee"
@@ -281,6 +282,7 @@ export default async function Home({
                     : stats.latest.med_base_fee_mtokens
                 }
                 icon={<Bitcoin className="h-4 w-4 text-orange-500" />}
+                tooltip="Millisatoshi (msat) is the smallest unit of bitcoin on Lightning, equal to 0.001 satoshi. Base fees are fixed amounts charged per routed payment."
               />
             </div>
           </section>
