@@ -51,7 +51,17 @@ export default async function Home({
               network stats
             </Link>
           </div>
-          <ModeToggle />
+          <div className="flex items-center gap-2">
+            <Link
+              href="https://insigh.to/b/lnfyi"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-orange-500/10 border border-orange-500/20 h-9 px-4"
+            >
+              Leave feedback
+            </Link>
+            <ModeToggle />
+          </div>
         </nav>
 
         <div className="rounded-lg border border-orange-500/20 bg-orange-500/5 p-4">
