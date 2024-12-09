@@ -58,20 +58,22 @@ export default async function Home({
             <Zap className="h-5 w-5 text-orange-500" />
             <h2 className="font-semibold">What is the Lightning Network?</h2>
           </div>
-          <p className="text-sm text-muted-foreground">
-            The Lightning Network is a "layer 2" payment protocol built on top of Bitcoin. It
-            enables instant, low-cost transactions and increases Bitcoin's transaction capacity.
-            These statistics help track the network's growth and adoption, showing how this scaling
-            solution is evolving over time.
+          <div className="flex flex-col gap-2">
+            <p className="text-sm text-muted-foreground">
+              The Lightning Network is a "layer 2" payment protocol built on top of Bitcoin. It
+              enables instant, low-cost transactions and increases Bitcoin's transaction capacity.
+              These statistics help track the network's growth and adoption, showing how this
+              scaling solution is evolving over time.{' '}
+            </p>
             <Link
               href="https://lightning.network"
-              className="ml-2 text-orange-500 hover:underline"
+              className="ml-2 text-orange-500 hover:underline break-inside-avoid"
               target="_blank"
               rel="noopener"
             >
               Learn more →
             </Link>
-          </p>
+          </div>
         </div>
 
         <div className="space-y-6">
@@ -161,12 +163,14 @@ export default async function Home({
               <Network className="h-5 w-5 text-orange-500" />
               <h2 className="font-semibold">What are Lightning Channels?</h2>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Lightning channels are payment corridors between two nodes on the network. Each
-              channel is funded with bitcoin, creating its capacity for payments. More channels and
-              higher capacities mean better network connectivity and larger possible transactions.
-              Channel statistics help us understand the network's liquidity and payment
-              capabilities.
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-muted-foreground">
+                Lightning channels are payment corridors between two nodes on the network. Each
+                channel is funded with bitcoin, creating its capacity for payments. More channels
+                and higher capacities mean better network connectivity and larger possible
+                transactions. Channel statistics help us understand the network's liquidity and
+                payment capabilities.
+              </p>
               <Link
                 href="https://lightning.network/lightning-network-paper.pdf"
                 className="ml-2 text-orange-500 hover:underline"
@@ -175,7 +179,7 @@ export default async function Home({
               >
                 Technical details →
               </Link>
-            </p>
+            </div>
           </div>
 
           <section aria-labelledby="channel-stats">
@@ -232,12 +236,14 @@ export default async function Home({
               <Users className="h-5 w-5 text-orange-500" />
               <h2 className="font-semibold">What are Lightning Nodes?</h2>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Lightning nodes are participants in the network that route payments and manage
-              channels. The most connected nodes (by number of channels) and well-funded nodes (by
-              total capacity) play a crucial role in the network's efficiency and reliability. These
-              top nodes often represent businesses, payment processors, and dedicated routing
-              providers.
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-muted-foreground">
+                Lightning nodes are participants in the network that route payments and manage
+                channels. The most connected nodes (by number of channels) and well-funded nodes (by
+                total capacity) play a crucial role in the network's efficiency and reliability.
+                These top nodes often represent businesses, payment processors, and dedicated
+                routing providers.
+              </p>
               <Link
                 href="https://docs.lightning.engineering/the-lightning-network/lightning-overview/lightning-nodes"
                 className="ml-2 text-orange-500 hover:underline"
@@ -246,7 +252,7 @@ export default async function Home({
               >
                 Learn about running a node →
               </Link>
-            </p>
+            </div>
           </div>
 
           <section aria-labelledby="top-nodes">

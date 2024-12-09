@@ -41,10 +41,9 @@ export function NetworkChart({ data }: { data: StatsVariation[] }) {
           tickMargin={12}
           stroke="hsl(var(--foreground))"
           tickFormatter={(value) => {
-            // Assuming value is in format "MM/DD/YYYY"
             return value.split('/').slice(0, 2).join('/') // Only keep MM/DD
           }}
-          interval={6}
+          interval={Math.ceil(chartData.length / 6) - 1} // Will show ~6 ticks
         />
         <YAxis
           dataKey="channels"
