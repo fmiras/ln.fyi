@@ -20,6 +20,7 @@ type LatestStats = {
 export async function getStats(): Promise<LatestStats> {
   const res = await fetch('https://mempool.space/api/v1/lightning/statistics/latest')
   const data = await res.json()
+  console.debug('[getStats] data', data)
   return data
 }
 
@@ -37,6 +38,7 @@ export type StatsVariation = {
 export async function getStatsVariations(interval: Interval): Promise<StatsVariation[]> {
   const res = await fetch(`https://mempool.space/api/v1/lightning/statistics/${interval}`)
   const data: StatsVariation[] = await res.json()
+  console.debug('[getStatsVariations] data', data)
   return data.map((stat) => ({
     ...stat,
     node_count: stat.tor_nodes + stat.clearnet_nodes + stat.unannounced_nodes
@@ -78,5 +80,6 @@ type NodesRanking = {
 export async function getNodesRanking(): Promise<NodesRanking> {
   const res = await fetch('https://mempool.space/api/v1/lightning/nodes/rankings')
   const data: NodesRanking = await res.json()
+  console.debug('[getNodesRanking] data', data)
   return data
 }
