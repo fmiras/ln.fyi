@@ -33,19 +33,21 @@ function StatsCard({
           {icon}
           {title}
         </CardTitle>
-        <Badge
-          variant={isPositive ? 'default' : 'secondary'}
-          className={`px-2 py-1 ${
-            isPositive ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'
-          }`}
-        >
-          {isPositive ? (
-            <ArrowUp className="mr-1 h-4 w-4" />
-          ) : (
-            <ArrowDown className="mr-1 h-4 w-4" />
-          )}
-          {percentChange}%
-        </Badge>
+        {change !== 0 && (
+          <Badge
+            variant={isPositive ? 'default' : 'secondary'}
+            className={`px-2 py-1 ${
+              isPositive ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'
+            }`}
+          >
+            {isPositive ? (
+              <ArrowUp className="mr-1 h-4 w-4" />
+            ) : (
+              <ArrowDown className="mr-1 h-4 w-4" />
+            )}
+            {percentChange}%
+          </Badge>
+        )}
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{value}</div>
@@ -60,6 +62,7 @@ export default async function Home({
   searchParams: Promise<{ interval?: string }>
 }) {
   const stats = await getStats()
+
   const search = await searchParams
   const interval = search.interval
     ? INTERVALS.includes(search.interval)
@@ -70,7 +73,7 @@ export default async function Home({
   const historicalStats = await getStatsVariations(interval)
   const previous = historicalStats.reduce(
     (acc, curr) => (acc.added < curr.added ? acc : curr),
-    historicalStats[0]
+    historicalStats[0] || {}
   )
 
   const { topByCapacity, topByChannels } = await getNodesRanking()
@@ -111,22 +114,24 @@ export default async function Home({
               <StatsCard
                 title="Total Nodes"
                 value={stats.latest.node_count.toLocaleString()}
-                change={stats.latest.node_count - previous.node_count}
-                previousValue={previous.node_count}
+                change={stats.previous ? stats.latest.node_count - previous.node_count : 0}
+                previousValue={stats.previous ? previous.node_count : stats.latest.node_count}
                 icon={<Users className="h-4 w-4 text-orange-500" />}
               />
               <StatsCard
                 title="Total Channels"
                 value={stats.latest.channel_count.toLocaleString()}
-                change={stats.latest.channel_count - previous.channel_count}
-                previousValue={previous.channel_count}
+                change={stats.previous ? stats.latest.channel_count - previous.channel_count : 0}
+                previousValue={stats.previous ? previous.channel_count : stats.latest.channel_count}
                 icon={<Network className="h-4 w-4 text-orange-500" />}
               />
               <StatsCard
                 title="Total Capacity"
                 value={`₿ ${(stats.latest.total_capacity / 100_000_000).toLocaleString()}`}
-                change={stats.latest.total_capacity - previous.total_capacity}
-                previousValue={previous.total_capacity}
+                change={stats.previous ? stats.latest.total_capacity - previous.total_capacity : 0}
+                previousValue={
+                  stats.previous ? previous.total_capacity : stats.latest.total_capacity
+                }
                 format="btc"
                 icon={<Bitcoin className="h-4 w-4 text-orange-500" />}
               />
@@ -189,23 +194,39 @@ export default async function Home({
               <StatsCard
                 title="Average Capacity"
                 value={`₿ ${(stats.latest.avg_capacity / 100_000_000).toLocaleString()}`}
-                change={stats.latest.avg_capacity - stats.previous.avg_capacity}
-                previousValue={stats.previous.avg_capacity}
+                change={
+                  stats.previous ? stats.latest.avg_capacity - stats.previous.avg_capacity : 0
+                }
+                previousValue={
+                  stats.previous ? stats.previous.avg_capacity : stats.latest.avg_capacity
+                }
                 format="btc"
                 icon={<Bitcoin className="h-4 w-4 text-orange-500" />}
               />
               <StatsCard
                 title="Average Fee Rate"
                 value={`${stats.latest.avg_fee_rate} ppm`}
-                change={stats.latest.avg_fee_rate - stats.previous.avg_fee_rate}
-                previousValue={stats.previous.avg_fee_rate}
+                change={
+                  stats.previous ? stats.latest.avg_fee_rate - stats.previous.avg_fee_rate : 0
+                }
+                previousValue={
+                  stats.previous ? stats.previous.avg_fee_rate : stats.latest.avg_fee_rate
+                }
                 icon={<Zap className="h-4 w-4 text-orange-500" />}
               />
               <StatsCard
                 title="Median Base Fee"
                 value={`${stats.latest.med_base_fee_mtokens} msat`}
-                change={stats.latest.med_base_fee_mtokens - stats.previous.med_base_fee_mtokens}
-                previousValue={stats.previous.med_base_fee_mtokens}
+                change={
+                  stats.previous
+                    ? stats.latest.med_base_fee_mtokens - stats.previous.med_base_fee_mtokens
+                    : 0
+                }
+                previousValue={
+                  stats.previous
+                    ? stats.previous.med_base_fee_mtokens
+                    : stats.latest.med_base_fee_mtokens
+                }
                 icon={<Bitcoin className="h-4 w-4 text-orange-500" />}
               />
             </div>

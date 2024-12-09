@@ -14,7 +14,7 @@ type LatestStatVariation = Omit<StatsVariation, 'added'> & {
 
 type LatestStats = {
   latest: LatestStatVariation
-  previous: LatestStatVariation
+  previous?: LatestStatVariation
 }
 
 export async function getStats(): Promise<LatestStats> {
