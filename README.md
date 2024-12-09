@@ -1,36 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ln.fyi
 
-## Getting Started
+ln.fyi is a real-time Lightning Network analytics platform that provides comprehensive statistics and insights about the Bitcoin Lightning Network. It offers detailed information about nodes, channels, network capacity, and other key metrics.
 
-First, run the development server:
+## Features
 
+- ⚡️ Real-time Lightning Network statistics
+- 📊 Node rankings by capacity and channels
+- 🗺️ Node location tracking and visualization
+- 📈 Historical network growth data
+- 💰 Channel capacity analytics
+- 🔍 Detailed node information and features
+
+## Setup
+
+1. Install dependencies:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Start the development server:
+```bash
+pnpm dev
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Open [http://localhost:3000](http://localhost:3000) to view the application
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Environment Setup
 
-## Learn More
+Copy the `.env.example` file to `.env.local` and fill in your environment variables:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+cp .env.example .env.local
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## License
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+[MIT License](LICENSE)
 
-## Deploy on Vercel
+## Credits
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+This project makes use of the following excellent resources:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [shadcn/ui](https://ui.shadcn.com/) - Beautiful and customizable components built with Radix UI and Tailwind CSS
+- [mempool.space API](https://mempool.space/docs/api) - Bitcoin mempool and Lightning Network data provider
