@@ -1,6 +1,6 @@
 'use client'
 
-import { GoogleMap, MarkerF, LoadScript } from '@react-google-maps/api'
+import { GoogleMap, MarkerF, useLoadScript } from '@react-google-maps/api'
 
 interface NodeLocationMapProps {
   lat: number
@@ -18,29 +18,33 @@ if (!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
 }
 
 export function NodeLocationMap({ lat, lng }: NodeLocationMapProps) {
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!
+  })
+
   const center = {
     lat: lat,
     lng: lng
   }
 
+  if (!isLoaded) return <div>Loading...</div>
+
   return (
-    <LoadScript googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}>
-      <GoogleMap
-        mapContainerStyle={containerStyle}
-        center={center}
-        zoom={13}
-        options={{
-          styles: [
-            {
-              featureType: 'all',
-              elementType: 'all',
-              stylers: [{ saturation: -100 }]
-            }
-          ]
-        }}
-      >
-        <MarkerF position={center} />
-      </GoogleMap>
-    </LoadScript>
+    <GoogleMap
+      mapContainerStyle={containerStyle}
+      center={center}
+      zoom={13}
+      options={{
+        styles: [
+          {
+            featureType: 'all',
+            elementType: 'all',
+            stylers: [{ saturation: -100 }]
+          }
+        ]
+      }}
+    >
+      <MarkerF position={center} />
+    </GoogleMap>
   )
 }
