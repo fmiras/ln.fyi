@@ -1,4 +1,6 @@
-# ln.fyi
+![image](https://github.com/user-attachments/assets/62a832a2-daf9-4356-87b2-894a389d5dcb)# ln.fyi
+
+![image](https://github.com/user-attachments/assets/08409daa-0633-4258-a3d0-1ac75142e1c6)
 
 ln.fyi is a real-time Lightning Network analytics platform that provides comprehensive statistics and insights about the Bitcoin Lightning Network. It offers detailed information about nodes, channels, network capacity, and other key metrics.
 
