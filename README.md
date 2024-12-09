@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/62a832a2-daf9-4356-87b2-894a389d5dcb)# ln.fyi
+# ln.fyi
 
 ![image](https://github.com/user-attachments/assets/08409daa-0633-4258-a3d0-1ac75142e1c6)
 
