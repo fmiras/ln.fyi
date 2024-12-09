@@ -185,15 +185,21 @@ export default async function Home({
           </section>
 
           <section aria-labelledby="top-nodes">
-            <Link href="/ranking">
+            <div className="flex items-center justify-between mb-4">
               <h2
                 id="top-nodes"
-                className="text-lg font-semibold mb-4 flex items-center gap-2 text-orange-500"
+                className="text-lg font-semibold flex items-center gap-2 text-orange-500"
               >
                 <Trophy className="h-5 w-5" />
                 Top Nodes
               </h2>
-            </Link>
+              <Link
+                href="/ranking"
+                className="text-sm text-orange-500 hover:opacity-80 transition-opacity flex items-center gap-1"
+              >
+                See full ranking list →
+              </Link>
+            </div>
             <div className="grid gap-4 md:grid-cols-2">
               <Card className="border-orange-500/20">
                 <CardHeader>
