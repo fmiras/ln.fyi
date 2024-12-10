@@ -19,7 +19,7 @@ export default async function Home({
 
   const search = await searchParams
   const interval = search.interval
-    ? INTERVALS.includes(search.interval)
+    ? INTERVALS.includes(search.interval as Interval)
       ? (search.interval as Interval)
       : '3m'
     : '3m'

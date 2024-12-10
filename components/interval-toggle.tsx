@@ -1,4 +1,4 @@
-import { INTERVALS } from '@/lib/types'
+import { INTERVALS, INTERVALS_LABELS, type Interval } from '@/lib/types'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,12 +7,14 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 
-export function IntervalToggle({ currentInterval = '1w' }: { currentInterval?: string }) {
+export function IntervalToggle({ currentInterval = '3m' }: { currentInterval?: Interval }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm">
-          {INTERVALS.includes(currentInterval) ? currentInterval : '1w'}
+          {INTERVALS.includes(currentInterval)
+            ? INTERVALS_LABELS[currentInterval]
+            : INTERVALS_LABELS['3m']}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[50px]">
@@ -21,7 +23,7 @@ export function IntervalToggle({ currentInterval = '1w' }: { currentInterval?: s
             <input type="hidden" name="interval" value={interval} />
             <DropdownMenuItem asChild>
               <button type="submit" className="w-full text-left">
-                {interval}
+                {INTERVALS_LABELS[interval]}
               </button>
             </DropdownMenuItem>
           </form>
