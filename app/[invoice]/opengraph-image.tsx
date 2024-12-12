@@ -1,27 +1,18 @@
 import { ImageResponse } from 'next/og'
-
 import { decode } from '@/lib/decode'
 
 export const runtime = 'edge'
-
 export const alt = 'ln.fyi - Lightning Invoice Details'
-
-export const size = {
-  width: 1200,
-  height: 630
-}
-
+export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
-// Helper to format satoshis to BTC
 function formatAmount(sats: number): string {
-  return (sats / 100_000_000).toFixed(8) + ' BTC'
+  const btc = (sats / 100_000_000).toFixed(8)
+  return `${(sats / 1000).toLocaleString()} sats (₿ ${btc})`
 }
 
 export default async function Image({ params }: { params: { invoice: string } }) {
-  const invoice = params.invoice
-  const decoded = decode(invoice)
-
+  const decoded = decode(params.invoice)
   const amount = decoded.amount || 0
   const description = decoded.description || 'No description'
 
@@ -37,41 +28,114 @@ export default async function Image({ params }: { params: { invoice: string } })
           width: '100%',
           height: '100%',
           display: 'flex',
-          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
           padding: '40px',
-          justifyContent: 'space-between'
+          backgroundImage: 'radial-gradient(circle at 25px 25px, #eee 2%, transparent 2.5%)',
+          backgroundSize: '50px 50px'
         }}
       >
-        <div
-          style={{
-            fontSize: '128px',
-            fontWeight: '600'
-          }}
-        >
-          ln.fyi
-        </div>
-
+        {/* Receipt Card */}
         <div
           style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: '40px'
+            width: '90%',
+            height: '90%',
+            padding: '40px',
+            background: 'white',
+            borderRadius: '12px',
+            boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+            border: '1px solid #eee'
           }}
         >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ fontSize: '72px', fontWeight: '600', display: 'flex', gap: '16px' }}>
-              ⚡️ {formatAmount(amount)}
+          {/* Header */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '40px',
+              borderBottom: '2px dashed #eee',
+              paddingBottom: '20px'
+            }}
+          >
+            <div style={{ fontSize: '64px', fontWeight: '600' }}>ln.fyi</div>
+            <div
+              style={{
+                fontSize: '24px',
+                color: '#666',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              Lightning Invoice
             </div>
-            <div style={{ color: '#666', fontSize: '32px' }}>Amount</div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {/* Amount Section */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+              marginBottom: '40px',
+              padding: '20px',
+              background: '#f9f9f9',
+              borderRadius: '8px'
+            }}
+          >
+            <div style={{ fontSize: '24px', color: '#666' }}>Amount Due</div>
             <div
-              style={{ fontSize: '36px', fontWeight: '400', color: '#333', wordWrap: 'break-word' }}
+              style={{
+                fontSize: '48px',
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px'
+              }}
+            >
+              ⚡️ {formatAmount(amount)}
+            </div>
+          </div>
+
+          {/* Description Section */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+              borderTop: '2px dashed #eee',
+              paddingTop: '20px'
+            }}
+          >
+            <div style={{ fontSize: '24px', color: '#666' }}>Description</div>
+            <div
+              style={{
+                fontSize: '32px',
+                color: '#333',
+                wordWrap: 'break-word',
+                maxWidth: '100%'
+              }}
             >
               {description}
             </div>
-            <div style={{ color: '#666', fontSize: '32px' }}>Description</div>
+          </div>
+
+          {/* Footer */}
+          <div
+            style={{
+              marginTop: 'auto',
+              borderTop: '2px dashed #eee',
+              paddingTop: '20px',
+              display: 'flex',
+              justifyContent: 'center',
+              color: '#666',
+              fontSize: '24px'
+            }}
+          >
+            Pay with Bitcoin Lightning Network
           </div>
         </div>
       </div>
