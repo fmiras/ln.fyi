@@ -7,8 +7,8 @@ export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
 function formatAmount(sats: number): string {
-  const btc = (sats / 100_000_000).toFixed(8)
-  return `${(sats / 1000).toLocaleString()} sats (₿ ${btc})`
+  const btc = sats / 100_000_000
+  return `${(sats / 1000).toLocaleString()} sats (${btc} BTC)`
 }
 
 export default async function Image({ params }: { params: { invoice: string } }) {
@@ -121,21 +121,6 @@ export default async function Image({ params }: { params: { invoice: string } })
             >
               {description}
             </div>
-          </div>
-
-          {/* Footer */}
-          <div
-            style={{
-              marginTop: 'auto',
-              borderTop: '2px dashed #eee',
-              paddingTop: '20px',
-              display: 'flex',
-              justifyContent: 'center',
-              color: '#666',
-              fontSize: '24px'
-            }}
-          >
-            Pay with Bitcoin Lightning Network
           </div>
         </div>
       </div>
