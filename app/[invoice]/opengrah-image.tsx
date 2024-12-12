@@ -1,5 +1,6 @@
 import { ImageResponse } from 'next/og'
-import { decode } from '@/app/[invoice]/page'
+
+import { decode } from '@/lib/decode'
 
 export const runtime = 'edge'
 
