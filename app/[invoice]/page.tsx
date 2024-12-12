@@ -1,7 +1,7 @@
 import LightningInvoice from '@/components/lightning-invoice'
 import { Invoice } from '@/lib/types'
 
-function decode(invoice: string): Invoice {
+function decode(_invoice: string): Invoice {
   return {
     amount: 100000,
     payee: '035dd73e7f53dd0b3e9a94910d73ab52d33f2dd92c7321cfabef1dd05e2a6e7445',
@@ -13,8 +13,9 @@ function decode(invoice: string): Invoice {
   }
 }
 
-export default function InvoicePage({ params }: { params: { invoice: string } }) {
-  const invoice = decode(params.invoice)
+export default async function InvoicePage({ params }: { params: Promise<{ invoice: string }> }) {
+  const invoiceHash = (await params).invoice
+  const invoice = decode(invoiceHash)
 
   return <LightningInvoice invoice={invoice} />
 }
