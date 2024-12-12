@@ -1,7 +1,7 @@
 import LightningInvoice from '@/components/lightning-invoice'
 import { Invoice } from '@/lib/types'
 
-function decode(_invoice: string): Invoice {
+export function decode(_invoice: string): Invoice {
   return {
     amount: 100000,
     payee: '035dd73e7f53dd0b3e9a94910d73ab52d33f2dd92c7321cfabef1dd05e2a6e7445',
