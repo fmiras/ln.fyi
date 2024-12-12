@@ -3,6 +3,7 @@ import { Geist } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { ThemeProvider } from 'next-themes'
+import { Toaster } from '@/components/ui/toaster'
 
 import './globals.css'
 
@@ -50,6 +51,7 @@ export default function RootLayout({
           {children}
           <Analytics />
           <SpeedInsights />
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>
