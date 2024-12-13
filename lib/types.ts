@@ -12,10 +12,9 @@ export const INTERVALS_LABELS = {
 export type Interval = (typeof INTERVALS)[number]
 
 export type Invoice = {
-  invoice: string
   amount?: number | null
   payee?: string
-  paymentHash?: string
+  paymentHash: string
   description?: string
   timestamp?: string
   expires?: string
