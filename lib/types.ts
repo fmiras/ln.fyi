@@ -1,5 +1,3 @@
-import { NonDirectionalSuspenseListProps } from 'react'
-
 export const INTERVALS = ['1m', '3m', '6m', '1y', '2y', '3y'] as const
 
 export const INTERVALS_LABELS = {
