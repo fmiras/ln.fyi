@@ -6,7 +6,7 @@ import { Copy } from 'lucide-react'
 import { formatDistance } from 'date-fns'
 import { motion, AnimatePresence } from 'framer-motion'
 
-import { Card, CardContent } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { Invoice } from '@/lib/types'
