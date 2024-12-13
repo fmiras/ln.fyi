@@ -13,8 +13,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const invoiceHash = (await params).invoice
   const invoice = decode(invoiceHash)
 
+  const titlePrefix = invoice.description ? `${invoice.description} - ` : ''
+
   return {
-    title: `${invoice.description} - Lightning Invoice Details - ln.fyi`,
+    title: `${titlePrefix}Lightning Invoice - ln.fyi`,
     description: `View detailed statistics and information about Lightning Network invoice ${
       invoice.description
     }. Amount: ₿${(invoice.amount ?? 0 / 100_000_000).toLocaleString()}`,

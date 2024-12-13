@@ -96,12 +96,7 @@ export default function LightningInvoice({
 
           <motion.div layout className="p-6 space-y-6">
             <motion.div layout className="flex justify-center">
-              <motion.div
-                layout
-                className="bg-white p-2 rounded-lg shadow-inner"
-                whileHover={{ scale: 1.02 }}
-                transition={{ type: 'spring', stiffness: 300 }}
-              >
+              <motion.div layout className="bg-white p-2 rounded-lg shadow-inner">
                 <QRCodeSVG value={paymentHash} size={180} />
               </motion.div>
             </motion.div>
@@ -119,7 +114,7 @@ export default function LightningInvoice({
                   <h2 className="font-medium text-gray-700">Amount Due</h2>
                 </div>
                 <span className="text-2xl font-bold text-gray-800">
-                  {showBtc ? `₿ ${amountBtc.toFixed(8)}` : `${amountSats.toLocaleString()} sats`}
+                  {showBtc ? `${amountBtc.toFixed(8)} BTC` : `${amountSats.toLocaleString()} sats`}
                 </span>
               </div>
             </motion.div>
