@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 
 import LightningInvoice from '@/components/lightning-invoice'
+import ThemeWrapper from '@/components/theme-wrapper'
 import { decode } from '@/lib/decode'
 
 interface PageProps {
@@ -32,5 +33,11 @@ export default async function InvoicePage({ params }: PageProps) {
   const invoiceHash = (await params).invoice
   const invoice = decode(invoiceHash)
 
-  return <LightningInvoice invoice={invoice} />
+  return (
+    <ThemeWrapper theme="light">
+      <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 p-4 flex items-center justify-center">
+        <LightningInvoice invoice={invoice} />
+      </div>
+    </ThemeWrapper>
+  )
 }
