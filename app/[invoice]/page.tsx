@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: `${invoice.description} - Lightning Invoice Details - ln.fyi`,
     description: `View detailed statistics and information about Lightning Network invoice ${
       invoice.description
-    }. Amount: ₿${(invoice.amount / 100_000_000).toLocaleString()}`,
+    }. Amount: ₿${(invoice.amount ?? 0 / 100_000_000).toLocaleString()}`,
     openGraph: {
       title: `${invoice.description} - Lightning Invoice Details`,
       description: `View detailed statistics and information about Lightning Network invoice ${invoice.description}`,

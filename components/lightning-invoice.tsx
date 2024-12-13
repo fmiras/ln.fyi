@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Copy } from 'lucide-react'
+import { formatDistance } from 'date-fns'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -19,7 +20,7 @@ export default function LightningInvoice({
   invoice: Invoice
 }) {
   const [showBtc, setShowBtc] = useState(false)
-  const amountSats = amount / 1000
+  const amountSats = amount ?? 0 / 1000
   const amountBtc = amountSats / 100000000
   const { toast } = useToast()
 
@@ -31,7 +32,7 @@ export default function LightningInvoice({
     })
   }
 
-  const expiresDate = new Date(expires)
+  const expiresDate = expires ? new Date(expires) : new Date()
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 p-4 flex items-center justify-center">
@@ -78,15 +79,17 @@ export default function LightningInvoice({
               <p className="text-sm font-medium text-gray-500">Description</p>
               <p className="text-sm text-gray-700">{description || 'N/A'}</p>
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Expires</p>
-              <p className="text-sm text-gray-700">{expiresDate.toLocaleString()}</p>
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Expires</p>
+                <p className="text-sm text-gray-700">{expiresDate.toLocaleString()}</p>
+              </div>
+
+              <p className="text-sm text-emerald-600 font-medium">
+                Valid for {formatDistance(expiresDate, new Date())}
+              </p>
             </div>
           </div>
-
-          <p className="text-sm text-emerald-600 font-medium">
-            Valid for {Math.floor((expires - Date.now()) / 1000 / 60 / 60)} hours
-          </p>
 
           <div className="space-y-2">
             <Button
