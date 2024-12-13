@@ -24,14 +24,15 @@ export default async function Image({ params }: { params: { invoice: string } })
     (
       <div
         style={{
-          background: 'white',
+          background: '#fa7014',
           width: '100%',
           height: '100%',
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
           padding: '40px',
-          backgroundImage: 'radial-gradient(circle at 25px 25px, #eee 2%, transparent 2.5%)',
+          backgroundImage:
+            'radial-gradient(circle at 25px 25px, rgba(255,255,255,0.1) 2%, transparent 2.5%)',
           backgroundSize: '50px 50px'
         }}
       >
