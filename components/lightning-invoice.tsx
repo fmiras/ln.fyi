@@ -40,7 +40,7 @@ export default function LightningInvoice({
         style={paperTexture}
       >
         <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-gray-800">Payment Details</h1>
+          <h1 className="text-2xl font-bold text-gray-800">Lightning Invoice</h1>
         </div>
         <CardContent className="p-6 space-y-6">
           <div className="flex justify-center">
