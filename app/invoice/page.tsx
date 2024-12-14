@@ -1,18 +1,17 @@
 import { Metadata } from 'next'
 
 import LightningInvoice from '@/components/lightning-invoice'
-import ThemeWrapper from '@/components/theme-wrapper'
 import { decode } from '@/lib/decode'
 
 interface PageProps {
-  params: Promise<{
-    invoice: string
+  searchParams: Promise<{
+    rawInvoice: string
   }>
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const invoiceHash = (await params).invoice
-  const invoice = decode(invoiceHash)
+export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
+  const rawInvoice = (await searchParams).rawInvoice
+  const invoice = decode(rawInvoice)
 
   const titlePrefix = invoice.description ? `${invoice.description} - ` : ''
 
@@ -29,17 +28,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
-export default async function InvoicePage({ params }: PageProps) {
-  const invoiceHash = (await params).invoice
-  const invoice = decode(invoiceHash)
+export default async function InvoicePage({ searchParams }: PageProps) {
+  const rawInvoice = (await searchParams).rawInvoice
+  const invoice = decode(rawInvoice)
 
   return (
-    <ThemeWrapper theme="light">
-      <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 px-4 py-8 md:p-4 flex items-center justify-center">
-        <div className="w-full max-w-md">
-          <LightningInvoice invoice={invoice} />
-        </div>
+    <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 px-4 py-8 md:p-4 flex items-center justify-center">
+      <div className="w-full max-w-md">
+        <LightningInvoice invoice={invoice} />
       </div>
-    </ThemeWrapper>
+    </div>
   )
 }

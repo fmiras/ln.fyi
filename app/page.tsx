@@ -1,5 +1,15 @@
 import Link from 'next/link'
-import { Bitcoin, Zap, Network, Users, Trophy, HelpCircle } from 'lucide-react'
+import {
+  Bitcoin,
+  Zap,
+  Network,
+  Users,
+  Trophy,
+  HelpCircle,
+  FileText,
+  Clock,
+  Shield
+} from 'lucide-react'
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,6 +19,7 @@ import { getNodesRanking, getStats, getStatsVariations, StatsVariation } from '.
 import { NetworkChart } from './network-chart'
 import { Interval, INTERVALS } from '../lib/types'
 import { StatsCard } from './stats-card'
+import LightningInvoice from '@/components/lightning-invoice'
 
 export default async function Home({
   searchParams
@@ -29,7 +40,7 @@ export default async function Home({
     (acc, curr) => (acc.added < curr.added ? acc : curr),
     historicalStats[0] || null
   )
-  console.debug('[getStatsVariations] previous', previous)
+  console.debug(`[getStatsVariations] previous ${previous?.added}`)
 
   const { topByCapacity, topByChannels } = await getNodesRanking()
 
@@ -398,6 +409,112 @@ export default async function Home({
                   </div>
                 </CardContent>
               </Card>
+            </div>
+          </section>
+
+          <section aria-labelledby="invoices-section">
+            <h2
+              id="invoices-section"
+              className="text-lg font-semibold mb-4 flex items-center gap-2 text-orange-500"
+            >
+              <Zap className="h-5 w-5" />
+              Lightning Invoices
+            </h2>
+
+            <div className="rounded-lg border border-orange-500/20 bg-orange-500/5 p-4 mb-6">
+              <div className="flex items-center gap-2 mb-2">
+                <Zap className="h-5 w-5 text-orange-500" />
+                <h2 className="font-semibold">What are Lightning Invoices?</h2>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Lightning invoices (also known as BOLT11 invoices) are payment requests on the
+                Lightning Network. They contain all the necessary information to make a payment,
+                including amount, recipient, expiry time, and an optional description. These
+                invoices are typically displayed as both QR codes and text strings beginning with
+                "lnbc" (for mainnet).
+              </p>
+            </div>
+
+            <div className="flex flex-col md:flex-row gap-8">
+              <div className="flex-1">
+                <h3 className="font-medium mb-4">Key Components</h3>
+                <div className="space-y-3">
+                  {[
+                    {
+                      title: 'Amount',
+                      description: 'The payment amount in satoshis or bitcoin',
+                      icon: <Bitcoin className="h-4 w-4" />
+                    },
+                    {
+                      title: 'Payee',
+                      description: "The recipient's public key",
+                      icon: <Users className="h-4 w-4" />
+                    },
+                    {
+                      title: 'Description',
+                      description: 'Optional payment description or purpose',
+                      icon: <FileText className="h-4 w-4" />
+                    },
+                    {
+                      title: 'Expiry',
+                      description: 'Time until the invoice becomes invalid',
+                      icon: <Clock className="h-4 w-4" />
+                    },
+                    {
+                      title: 'Signature',
+                      description: 'Cryptographic proof of invoice authenticity',
+                      icon: <Shield className="h-4 w-4" />
+                    }
+                  ].map((item) => (
+                    <div
+                      key={item.title}
+                      className="flex items-start gap-3 p-2 rounded-md transition-colors hover:bg-orange-500/5"
+                    >
+                      <div className="mt-0.5 text-orange-500">{item.icon}</div>
+                      <div>
+                        <div className="font-medium text-sm">{item.title}</div>
+                        <div className="text-sm text-muted-foreground">{item.description}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <form action="/invoice" className="mt-6 space-y-4">
+                  <div>
+                    <label htmlFor="invoice" className="text-sm font-medium">
+                      Decode a Lightning Invoice
+                    </label>
+                    <input
+                      type="text"
+                      id="rawInvoice"
+                      name="rawInvoice"
+                      placeholder="lnbc1m1pn4khtzpp5..."
+                      className="mt-1 w-full rounded-md border border-orange-500/20 bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="inline-flex items-center justify-center rounded-md bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                  >
+                    Decode Invoice
+                  </button>
+                </form>
+              </div>
+
+              <div className="flex-1">
+                <LightningInvoice
+                  invoice={{
+                    amount: 100000,
+                    payee: '035dd73e7f53dd0b3e9a94910d73ab52d33f2dd92c7321cfabef1dd05e2a6e7445',
+                    description: 'Electricity bill',
+                    rawInvoice:
+                      'lnbc1m1pn4khtzpp5ucrhq2pq5avz8ptvxvwexnw27rg50rxyvqtg0elp4q4j28jjdzzsdqqcqzzgxqyz5vqrzjqwnvuc0u4txn35cafc7w94gxvq5p3cu9dd95f7hlrh0fvs46wpvhd7tlprcnknpedcqqqqryqqqqthqqpysp5wl4w9ytv7avlfy98gf3y3mlc8cargzgh9x8vrr78lc8jyf365mcq9qrsgqwcew4ss2nv6wfud93z2tn04kpfvcg7mjn7evydk5te7hywgnyqcsl2sdfty5340emcl9zul95cw3th754dpry556rnfjkuyn4ra5wnsq75v7zu',
+                    expires: new Date(Date.now() + 3600000).toISOString(),
+                    signature:
+                      '7632eac20a9b34e4f1a58894b9beb60a59847b729fb2c236d45e7d72391320310faa0d4ac948d5f9de3e5173e5a61d15dfd4ab4232529a1cd32b7093a8fb474e'
+                  }}
+                />
+              </div>
             </div>
           </section>
         </div>
