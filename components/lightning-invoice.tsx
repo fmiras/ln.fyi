@@ -41,6 +41,10 @@ export default function LightningInvoice({
 
   const expiresDate = expires ? new Date(expires) : new Date()
 
+  const isExpired = (expiresDate: Date) => {
+    return new Date() > expiresDate
+  }
+
   return (
     <div>
       <Card
@@ -91,8 +95,16 @@ export default function LightningInvoice({
                   <p className="text-sm text-gray-700 break-all">{truncateAddress(payee)}</p>
                 </div>
                 {simpleMode && (
-                  <p className="text-sm text-emerald-600 font-medium">
-                    Valid for {formatDistance(expiresDate, new Date())}
+                  <p
+                    className={`text-sm font-medium ${
+                      isExpired(expiresDate) ? 'text-red-600' : 'text-emerald-600'
+                    }`}
+                  >
+                    {isExpired(expiresDate)
+                      ? `Expired ${formatDistance(expiresDate, new Date(), {
+                          addSuffix: true
+                        })}`
+                      : `Valid for ${formatDistance(expiresDate, new Date())}`}
                   </p>
                 )}
               </div>
@@ -130,11 +142,16 @@ export default function LightningInvoice({
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-sm font-medium text-gray-500">Expires</p>
-                  <p className="text-sm text-gray-700">{expiresDate.toLocaleString()}</p>
+                  <p
+                    className={`text-sm font-medium ${
+                      isExpired(expiresDate) ? 'text-red-600' : 'text-emerald-600'
+                    }`}
+                  >
+                    {isExpired(expiresDate)
+                      ? `Expired ${formatDistance(expiresDate, new Date())} ago`
+                      : `Valid for ${formatDistance(expiresDate, new Date())}`}
+                  </p>
                 </div>
-                <p className="text-sm text-emerald-600 font-medium">
-                  Valid for {formatDistance(expiresDate, new Date())}
-                </p>
               </div>
             )}
           </div>
