@@ -48,14 +48,14 @@ export default function LightningInvoice({
   return (
     <div>
       <Card
-        className="w-full max-w-[448px] min-w-[388px] bg-white shadow-lg rounded-lg overflow-hidden"
+        className="w-full max-w-[448px] min-w-[348px] bg-white shadow-lg rounded-lg overflow-hidden"
         style={paperTexture}
       >
         <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 border-b border-gray-200">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold text-gray-800">Lightning Invoice</h1>
             <div className="flex items-center space-x-2">
-              <span className={` text-sm text-black`}>Simple Mode</span>
+              <span className={` text-sm text-black`}>Simple</span>
               <Switch
                 checked={simpleMode}
                 onCheckedChange={setSimpleMode}

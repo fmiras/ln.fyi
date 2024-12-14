@@ -418,7 +418,7 @@ export default async function Home({
               className="text-lg font-semibold mb-4 flex items-center gap-2 text-orange-500"
             >
               <Zap className="h-5 w-5" />
-              Lightning Invoices
+              Invoice Decoder
             </h2>
 
             <div className="rounded-lg border border-orange-500/20 bg-orange-500/5 p-4 mb-6">
@@ -468,9 +468,9 @@ export default async function Home({
                   ].map((item) => (
                     <div
                       key={item.title}
-                      className="flex items-start gap-3 p-2 rounded-md transition-colors hover:bg-orange-500/5"
+                      className="flex items-center gap-3 p-2 rounded-md transition-colors hover:bg-orange-500/5"
                     >
-                      <div className="mt-0.5 text-orange-500">{item.icon}</div>
+                      <div className="text-orange-500">{item.icon}</div>
                       <div>
                         <div className="font-medium text-sm">{item.title}</div>
                         <div className="text-sm text-muted-foreground">{item.description}</div>
