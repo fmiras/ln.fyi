@@ -7,7 +7,8 @@ export function decode(invoice: string): Invoice {
   return {
     amount: decoded.satoshis,
     payee: decoded.payeeNodeKey,
-    paymentHash: decoded.paymentRequest || invoice,
+    rawInvoice: decoded.paymentRequest || invoice,
+    signature: decoded.signature,
     description: decoded.tags.find((tag) => tag.tagName === 'description')?.data.toString(),
     expires: decoded.timeExpireDateString,
     timestamp: decoded.timestampString

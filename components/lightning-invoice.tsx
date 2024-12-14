@@ -12,11 +12,11 @@ import { Invoice } from '@/lib/types'
 import { Switch } from '@/components/ui/switch'
 
 const paperTexture = {
-  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' viewBox='0 0 4 4'%3E%3Cpath fill='%23000000' fill-opacity='0.05' d='M1 3h1v1H1V3zm2-2h1v1H3V1z'%3E%3C/path%3E%3C/svg%3E")`
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' viewBox='0 0 4 4'%3E%3Cpath fill='%23000000' fill-opacity='0.1' d='M1 3h1v1H1V3zm2-2h1v1H3V1z'%3E%3C/path%3E%3C/svg%3E")`
 }
 
 export default function LightningInvoice({
-  invoice: { amount, payee, description, rawInvoice, expires }
+  invoice: { amount, payee, description, rawInvoice, expires, signature }
 }: {
   invoice: Invoice
 }) {
@@ -95,6 +95,27 @@ export default function LightningInvoice({
                     Valid for {formatDistance(expiresDate, new Date())}
                   </p>
                 )}
+              </div>
+            )}
+
+            {!simpleMode && signature && (
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Signature</p>
+                  <p className="text-sm text-gray-700 font-mono break-all">
+                    {truncateAddress(signature)}
+                  </p>
+                </div>
+                <div className="flex items-center">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-gray-500 hover:text-gray-700"
+                    onClick={() => copyToClipboard(signature)}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             )}
 

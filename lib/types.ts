@@ -14,7 +14,8 @@ export type Interval = (typeof INTERVALS)[number]
 export type Invoice = {
   amount?: number | null
   payee?: string
-  paymentHash: string
+  rawInvoice: string
+  signature?: string
   description?: string
   timestamp?: string
   expires?: string
