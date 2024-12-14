@@ -431,7 +431,7 @@ export default async function Home({
                 Lightning Network. They contain all the necessary information to make a payment,
                 including amount, recipient, expiry time, and an optional description. These
                 invoices are typically displayed as both QR codes and text strings beginning with
-                "lnbc" (for mainnet).
+                {'"'}lnbc{'"'} (for mainnet).
               </p>
             </div>
 
