@@ -44,7 +44,7 @@ export default function LightningInvoice({
   return (
     <div>
       <Card
-        className="w-[448px] bg-white shadow-lg rounded-lg overflow-hidden"
+        className="w-full max-w-[448px] bg-white shadow-lg rounded-lg overflow-hidden"
         style={paperTexture}
       >
         <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 border-b border-gray-200">

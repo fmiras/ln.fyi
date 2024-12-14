@@ -35,8 +35,10 @@ export default async function InvoicePage({ params }: PageProps) {
 
   return (
     <ThemeWrapper theme="light">
-      <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 p-4 flex items-center justify-center">
-        <LightningInvoice invoice={invoice} />
+      <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 px-4 py-8 md:p-4 flex items-center justify-center">
+        <div className="w-full max-w-md">
+          <LightningInvoice invoice={invoice} />
+        </div>
       </div>
     </ThemeWrapper>
   )
