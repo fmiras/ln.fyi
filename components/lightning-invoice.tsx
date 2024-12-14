@@ -55,7 +55,7 @@ export default function LightningInvoice({
               <Switch
                 checked={simpleMode}
                 onCheckedChange={setSimpleMode}
-                className="transition-transform duration-300 hover:scale-105"
+                className="transition-transform duration-300 hover:scale-105 data-[state=checked]:bg-gray-800 data-[state=checked]:hover:bg-gray-900"
               />
             </div>
           </div>
