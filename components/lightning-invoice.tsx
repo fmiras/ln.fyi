@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Copy } from 'lucide-react'
 import { formatDistance } from 'date-fns'
-import { motion, AnimatePresence } from 'framer-motion'
 
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -17,7 +16,7 @@ const paperTexture = {
 }
 
 export default function LightningInvoice({
-  invoice: { amount, payee, description, paymentHash, expires }
+  invoice: { amount, payee, description, rawInvoice, expires }
 }: {
   invoice: Invoice
 }) {
@@ -42,69 +41,35 @@ export default function LightningInvoice({
 
   const expiresDate = expires ? new Date(expires) : new Date()
 
-  const containerVariants = {
-    expanded: {
-      height: 'auto',
-      opacity: 1,
-      transition: {
-        duration: 0.4,
-        ease: [0.04, 0.62, 0.23, 0.98]
-      }
-    },
-    collapsed: {
-      height: 0,
-      opacity: 0,
-      transition: {
-        duration: 0.4,
-        ease: [0.04, 0.62, 0.23, 0.98]
-      }
-    }
-  }
-
   return (
-    <motion.div
-      layout
-      initial={{ scale: 0.9, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ duration: 0.3 }}
-    >
+    <div>
       <Card
         className="w-[448px] bg-white shadow-lg rounded-lg overflow-hidden"
         style={paperTexture}
       >
-        <motion.div
-          layout
-          className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 border-b border-gray-200"
-        >
+        <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 border-b border-gray-200">
           <div className="flex justify-between items-center">
-            <motion.h1 className="text-2xl font-bold text-gray-800" layout>
-              Lightning Invoice
-            </motion.h1>
-            <motion.div className="flex items-center space-x-2" layout>
-              <motion.span animate={{ opacity: simpleMode ? 1 : 0.5 }} className="text-sm">
-                Simple
-              </motion.span>
+            <h1 className="text-2xl font-bold text-gray-800">Lightning Invoice</h1>
+            <div className="flex items-center space-x-2">
+              <span className={`text-sm ${simpleMode ? 'opacity-100' : 'opacity-50'}`}>Simple</span>
               <Switch
                 checked={simpleMode}
                 onCheckedChange={setSimpleMode}
                 className="transition-transform duration-300 hover:scale-105"
               />
-            </motion.div>
+            </div>
           </div>
-        </motion.div>
+        </div>
 
-        <motion.div layout className="p-6 space-y-6">
-          <motion.div layout className="flex justify-center">
-            <motion.div layout className="bg-white p-2 rounded-lg shadow-inner">
-              <QRCodeSVG value={paymentHash} size={180} />
-            </motion.div>
-          </motion.div>
+        <div className="p-6 space-y-6">
+          <div className="flex justify-center">
+            <div className="bg-white p-2 rounded-lg shadow-inner">
+              <QRCodeSVG value={rawInvoice} size={180} />
+            </div>
+          </div>
 
-          <motion.div
-            layout
-            className="bg-gray-50 p-4 rounded-lg shadow-inner cursor-pointer"
-            whileHover={{ scale: 1.02 }}
-            transition={{ type: 'spring', stiffness: 300 }}
+          <div
+            className="bg-gray-50 p-4 rounded-lg shadow-inner cursor-pointer hover:scale-102 transition-transform"
             onMouseEnter={() => setShowBtc(true)}
             onMouseLeave={() => setShowBtc(false)}
           >
@@ -116,11 +81,11 @@ export default function LightningInvoice({
                 {showBtc ? `${amountBtc.toFixed(8)} BTC` : `${amountSats.toLocaleString()} sats`}
               </span>
             </div>
-          </motion.div>
+          </div>
 
-          <motion.div layout className="space-y-4">
+          <div className="space-y-4">
             {payee && (
-              <motion.div layout className="flex justify-between items-center">
+              <div className="flex justify-between items-center">
                 <div>
                   <p className="text-sm font-medium text-gray-500">Payee</p>
                   <p className="text-sm text-gray-700 break-all">{truncateAddress(payee)}</p>
@@ -130,62 +95,46 @@ export default function LightningInvoice({
                     Valid for {formatDistance(expiresDate, new Date())}
                   </p>
                 )}
-              </motion.div>
+              </div>
             )}
 
             {description && (
-              <motion.div layout>
+              <div>
                 <p className="text-sm font-medium text-gray-500">{!simpleMode && 'Description'}</p>
                 <p className="text-sm text-gray-700">{description}</p>
-              </motion.div>
+              </div>
             )}
 
-            <AnimatePresence>
-              {!simpleMode && (
-                <motion.div
-                  initial="collapsed"
-                  animate="expanded"
-                  exit="collapsed"
-                  variants={containerVariants}
-                  className="flex justify-between items-center"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Expires</p>
-                    <p className="text-sm text-gray-700">{expiresDate.toLocaleString()}</p>
-                  </div>
-                  <p className="text-sm text-emerald-600 font-medium">
-                    Valid for {formatDistance(expiresDate, new Date())}
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
+            {!simpleMode && (
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Expires</p>
+                  <p className="text-sm text-gray-700">{expiresDate.toLocaleString()}</p>
+                </div>
+                <p className="text-sm text-emerald-600 font-medium">
+                  Valid for {formatDistance(expiresDate, new Date())}
+                </p>
+              </div>
+            )}
+          </div>
 
-          <motion.div layout className="space-y-2">
+          <div className="space-y-2">
             <Button
               className="w-full bg-gray-800 hover:bg-gray-900 text-white"
-              onClick={() => copyToClipboard(paymentHash)}
+              onClick={() => copyToClipboard(rawInvoice)}
             >
               <Copy className="w-4 h-4 mr-2" /> Copy Invoice
             </Button>
-          </motion.div>
+          </div>
 
-          <AnimatePresence>
-            {!simpleMode && (
-              <motion.div
-                initial="collapsed"
-                animate="expanded"
-                exit="collapsed"
-                variants={containerVariants}
-                className="text-xs text-gray-500 break-all bg-gray-50 p-3 rounded-md"
-              >
-                <p className="font-medium mb-1">Raw Invoice:</p>
-                {paymentHash}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
+          {!simpleMode && (
+            <div className="text-xs text-gray-500 break-all bg-gray-50 p-3 rounded-md">
+              <p className="font-medium mb-1">Raw Invoice:</p>
+              {rawInvoice}
+            </div>
+          )}
+        </div>
       </Card>
-    </motion.div>
+    </div>
   )
 }
