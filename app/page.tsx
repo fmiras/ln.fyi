@@ -24,7 +24,7 @@ import LightningInvoice from '@/components/lightning-invoice'
 export default async function Home({
   searchParams
 }: {
-  searchParams: Promise<{ interval?: string }>
+  searchParams: Promise<{ interval?: string; error?: string }>
 }) {
   const stats = await getStats()
 
@@ -34,6 +34,8 @@ export default async function Home({
       ? (search.interval as Interval)
       : '3m'
     : '3m'
+
+  const error = search.error
 
   const historicalStats = await getStatsVariations(interval)
   const previous: StatsVariation | null = historicalStats.reduce(
@@ -488,9 +490,16 @@ export default async function Home({
                       type="text"
                       id="rawInvoice"
                       name="rawInvoice"
+                      pattern="^ln[a-zA-Z0-9]*$"
+                      required
                       placeholder="lnbc1m1pn4khtzpp5..."
                       className="mt-1 w-full rounded-md border border-orange-500/20 bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-orange-500/20"
                     />
+                    {error === 'invalid_invoice' && (
+                      <p className="mt-2 text-sm text-red-500">
+                        Invalid Lightning invoice. Please check the format and try again.
+                      </p>
+                    )}
                   </div>
                   <button
                     type="submit"
