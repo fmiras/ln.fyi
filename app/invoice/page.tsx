@@ -5,12 +5,12 @@ import { decode } from '@/lib/decode'
 
 interface PageProps {
   searchParams: Promise<{
-    rawInvoice: string
+    raw_invoice: string
   }>
 }
 
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
-  const rawInvoice = (await searchParams).rawInvoice
+  const rawInvoice = (await searchParams).raw_invoice
   const invoice = decode(rawInvoice)
 
   const titlePrefix = invoice.description ? `${invoice.description} - ` : ''
@@ -29,7 +29,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 }
 
 export default async function InvoicePage({ searchParams }: PageProps) {
-  const rawInvoice = (await searchParams).rawInvoice
+  const rawInvoice = (await searchParams).raw_invoice
   const invoice = decode(rawInvoice)
 
   return (

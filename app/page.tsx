@@ -8,7 +8,8 @@ import {
   HelpCircle,
   FileText,
   Clock,
-  Shield
+  Shield,
+  XCircle
 } from 'lucide-react'
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -437,80 +438,50 @@ export default async function Home({
               </p>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-8">
-              <div className="flex-1">
-                <h3 className="font-medium mb-4">Key Components</h3>
-                <div className="space-y-3">
-                  {[
-                    {
-                      title: 'Amount',
-                      description: 'The payment amount in satoshis or bitcoin',
-                      icon: <Bitcoin className="h-4 w-4" />
-                    },
-                    {
-                      title: 'Payee',
-                      description: "The recipient's public key",
-                      icon: <Users className="h-4 w-4" />
-                    },
-                    {
-                      title: 'Description',
-                      description: 'Optional payment description or purpose',
-                      icon: <FileText className="h-4 w-4" />
-                    },
-                    {
-                      title: 'Expiry',
-                      description: 'Time until the invoice becomes invalid',
-                      icon: <Clock className="h-4 w-4" />
-                    },
-                    {
-                      title: 'Signature',
-                      description: 'Cryptographic proof of invoice authenticity',
-                      icon: <Shield className="h-4 w-4" />
-                    }
-                  ].map((item) => (
-                    <div
-                      key={item.title}
-                      className="flex items-center gap-3 p-2 rounded-md transition-colors hover:bg-orange-500/5"
-                    >
-                      <div className="text-orange-500">{item.icon}</div>
-                      <div>
-                        <div className="font-medium text-sm">{item.title}</div>
-                        <div className="text-sm text-muted-foreground">{item.description}</div>
+            <div className="flex flex-col gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                {[
+                  {
+                    title: 'Amount',
+                    description: 'The payment amount in satoshis or bitcoin',
+                    icon: <Bitcoin className="h-4 w-4" />
+                  },
+                  {
+                    title: 'Payee',
+                    description: "The recipient's public key",
+                    icon: <Users className="h-4 w-4" />
+                  },
+                  {
+                    title: 'Description',
+                    description: 'Optional payment description or purpose',
+                    icon: <FileText className="h-4 w-4" />
+                  },
+                  {
+                    title: 'Expiry',
+                    description: 'Time until the invoice becomes invalid',
+                    icon: <Clock className="h-4 w-4" />
+                  },
+                  {
+                    title: 'Signature',
+                    description: 'Cryptographic proof of invoice authenticity',
+                    icon: <Shield className="h-4 w-4" />
+                  }
+                ].map((item) => (
+                  <Card key={item.title} className="border-orange-500/20">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-3">
+                        <div className="text-orange-500">{item.icon}</div>
+                        <div>
+                          <div className="font-medium">{item.title}</div>
+                          <div className="text-sm text-muted-foreground">{item.description}</div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-
-                <form action="/invoice" className="mt-6 space-y-4">
-                  <div>
-                    <label htmlFor="invoice" className="text-sm font-medium">
-                      Decode a Lightning Invoice
-                    </label>
-                    <input
-                      type="text"
-                      id="rawInvoice"
-                      name="rawInvoice"
-                      pattern="^ln[a-zA-Z0-9]*$"
-                      required
-                      placeholder="lnbc1m1pn4khtzpp5..."
-                      className="mt-1 w-full rounded-md border border-orange-500/20 bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-orange-500/20"
-                    />
-                    {error === 'invalid_invoice' && (
-                      <p className="mt-2 text-sm text-red-500">
-                        Invalid Lightning invoice. Please check the format and try again.
-                      </p>
-                    )}
-                  </div>
-                  <button
-                    type="submit"
-                    className="inline-flex items-center justify-center rounded-md bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
-                  >
-                    Decode Invoice
-                  </button>
-                </form>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
 
-              <div className="flex-1">
+              <div className="flex justify-center">
                 <LightningInvoice
                   invoice={{
                     amount: 100000,
@@ -524,6 +495,32 @@ export default async function Home({
                   }}
                 />
               </div>
+
+              <form action="/invoice" className="flex flex-col gap-4 w-full">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <input
+                    type="text"
+                    id="raw_invoice"
+                    name="raw_invoice"
+                    pattern="^ln[a-zA-Z0-9]*$"
+                    required
+                    placeholder="Enter a Lightning invoice (starts with 'ln')"
+                    className="flex-1 rounded-md border border-orange-500/20 bg-background px-4 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-colors"
+                  />
+                  <button
+                    type="submit"
+                    className="inline-flex items-center justify-center rounded-md bg-orange-500 px-6 py-2.5 text-sm font-medium text-white hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-colors whitespace-nowrap"
+                  >
+                    Decode Invoice
+                  </button>
+                </div>
+                {error === 'invalid_invoice' && (
+                  <p className="text-sm text-red-500 flex items-center gap-2">
+                    <XCircle className="h-4 w-4" />
+                    Invalid Lightning invoice. Please check the format and try again.
+                  </p>
+                )}
+              </form>
             </div>
           </section>
         </div>
