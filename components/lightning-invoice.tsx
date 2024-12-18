@@ -48,14 +48,14 @@ export default function LightningInvoice({
   return (
     <div>
       <Card
-        className="w-full max-w-[448px] min-w-[348px] bg-white shadow-lg rounded-lg overflow-hidden"
+        className="w-full max-w-[448px] min-w-[348px] bg-background shadow-lg rounded-lg overflow-hidden"
         style={paperTexture}
       >
-        <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 border-b border-gray-200">
+        <div className="bg-gradient-to-r from-muted to-muted/50 p-6 border-b border-border">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-800">Lightning Invoice</h1>
+            <h1 className="text-2xl font-bold text-foreground">Lightning Invoice</h1>
             <div className="flex items-center space-x-2">
-              <span className={` text-sm text-black`}>Simple</span>
+              <span className="text-sm text-foreground">Simple</span>
               <Switch
                 checked={simpleMode}
                 onCheckedChange={setSimpleMode}
@@ -67,21 +67,21 @@ export default function LightningInvoice({
 
         <div className="p-6 space-y-6">
           <div className="flex justify-center">
-            <div className="bg-white p-2 rounded-lg shadow-inner">
+            <div className="bg-background p-2 rounded-lg shadow-inner">
               <QRCodeSVG value={rawInvoice} size={180} />
             </div>
           </div>
 
           <div
-            className="bg-gray-50 p-4 rounded-lg shadow-inner cursor-pointer hover:scale-102 transition-transform"
+            className="bg-muted p-4 rounded-lg shadow-inner cursor-pointer hover:scale-102 transition-transform"
             onMouseEnter={() => setShowBtc(true)}
             onMouseLeave={() => setShowBtc(false)}
           >
             <div className="flex justify-between items-center">
               <div>
-                <h2 className="font-medium text-gray-700">Amount Due</h2>
+                <h2 className="font-medium text-muted-foreground">Amount Due</h2>
               </div>
-              <span className="text-2xl font-bold text-gray-800">
+              <span className="text-2xl font-bold text-foreground">
                 {showBtc ? `${amountBtc.toFixed(8)} BTC` : `${amountSats.toLocaleString()} sats`}
               </span>
             </div>
@@ -158,7 +158,7 @@ export default function LightningInvoice({
 
           <div className="space-y-2">
             <Button
-              className="w-full bg-gray-800 hover:bg-gray-900 text-white"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
               onClick={() => copyToClipboard(rawInvoice)}
             >
               <Copy className="w-4 h-4 mr-2" /> Copy Invoice
@@ -166,7 +166,7 @@ export default function LightningInvoice({
           </div>
 
           {!simpleMode && (
-            <div className="text-xs text-gray-500 break-all bg-gray-50 p-3 rounded-md">
+            <div className="text-xs text-muted-foreground break-all bg-muted p-3 rounded-md">
               <p className="font-medium mb-1">Raw Invoice:</p>
               {rawInvoice}
             </div>
