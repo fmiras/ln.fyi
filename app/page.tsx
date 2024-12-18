@@ -481,19 +481,21 @@ export default async function Home({
                 ))}
               </div>
 
-              <div className="flex justify-center">
-                <LightningInvoice
-                  invoice={{
-                    amount: 100000,
-                    payee: '035dd73e7f53dd0b3e9a94910d73ab52d33f2dd92c7321cfabef1dd05e2a6e7445',
-                    description: 'Electricity bill',
-                    rawInvoice:
-                      'lnbc1m1pn4khtzpp5ucrhq2pq5avz8ptvxvwexnw27rg50rxyvqtg0elp4q4j28jjdzzsdqqcqzzgxqyz5vqrzjqwnvuc0u4txn35cafc7w94gxvq5p3cu9dd95f7hlrh0fvs46wpvhd7tlprcnknpedcqqqqryqqqqthqqpysp5wl4w9ytv7avlfy98gf3y3mlc8cargzgh9x8vrr78lc8jyf365mcq9qrsgqwcew4ss2nv6wfud93z2tn04kpfvcg7mjn7evydk5te7hywgnyqcsl2sdfty5340emcl9zul95cw3th754dpry556rnfjkuyn4ra5wnsq75v7zu',
-                    expires: new Date(Date.now() + 3600000).toISOString(),
-                    signature:
-                      '7632eac20a9b34e4f1a58894b9beb60a59847b729fb2c236d45e7d72391320310faa0d4ac948d5f9de3e5173e5a61d15dfd4ab4232529a1cd32b7093a8fb474e'
-                  }}
-                />
+              <div className="flex items-start justify-center h-full w-full">
+                <div className="w-[400px]">
+                  <LightningInvoice
+                    invoice={{
+                      amount: 100000,
+                      payee: '035dd73e7f53dd0b3e9a94910d73ab52d33f2dd92c7321cfabef1dd05e2a6e7445',
+                      description: 'Electricity bill',
+                      rawInvoice:
+                        'lnbc1m1pn4khtzpp5ucrhq2pq5avz8ptvxvwexnw27rg50rxyvqtg0elp4q4j28jjdzzsdqqcqzzgxqyz5vqrzjqwnvuc0u4txn35cafc7w94gxvq5p3cu9dd95f7hlrh0fvs46wpvhd7tlprcnknpedcqqqqryqqqqthqqpysp5wl4w9ytv7avlfy98gf3y3mlc8cargzgh9x8vrr78lc8jyf365mcq9qrsgqwcew4ss2nv6wfud93z2tn04kpfvcg7mjn7evydk5te7hywgnyqcsl2sdfty5340emcl9zul95cw3th754dpry556rnfjkuyn4ra5wnsq75v7zu',
+                      expires: new Date(Date.now() + 3600000).toISOString(),
+                      signature:
+                        '7632eac20a9b34e4f1a58894b9beb60a59847b729fb2c236d45e7d72391320310faa0d4ac948d5f9de3e5173e5a61d15dfd4ab4232529a1cd32b7093a8fb474e'
+                    }}
+                  />
+                </div>
               </div>
 
               <form action="/invoice" className="flex flex-col gap-4 w-full">
