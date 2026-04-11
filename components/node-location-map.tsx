@@ -9,38 +9,44 @@ interface NodeLocationMapProps {
 
 const containerStyle = {
   width: '100%',
-  height: '100%',
-  borderRadius: '0.5rem'
-}
-
-if (!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
-  throw new Error('NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is not set')
+  height: '100%'
 }
 
 export function NodeLocationMap({ lat, lng }: NodeLocationMapProps) {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+
   const { isLoaded } = useLoadScript({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!
+    googleMapsApiKey: apiKey || ''
   })
 
-  const center = {
-    lat: lat,
-    lng: lng
+  if (!apiKey) {
+    return (
+      <div className="h-full w-full flex items-center justify-center text-xs text-muted-foreground p-4 text-center">
+        Map unavailable — NEXT_PUBLIC_GOOGLE_MAPS_API_KEY not configured.
+      </div>
+    )
   }
 
-  if (!isLoaded) return <div>Loading...</div>
+  if (!isLoaded) {
+    return (
+      <div className="h-full w-full flex items-center justify-center text-xs text-muted-foreground">
+        Loading map…
+      </div>
+    )
+  }
+
+  const center = { lat, lng }
 
   return (
     <GoogleMap
       mapContainerStyle={containerStyle}
       center={center}
-      zoom={13}
+      zoom={11}
       options={{
+        disableDefaultUI: true,
+        zoomControl: true,
         styles: [
-          {
-            featureType: 'all',
-            elementType: 'all',
-            stylers: [{ saturation: -100 }]
-          }
+          { featureType: 'all', elementType: 'all', stylers: [{ saturation: -100 }] }
         ]
       }}
     >

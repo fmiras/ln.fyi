@@ -1,4 +1,5 @@
-import { Metadata } from 'next'
+import type { Metadata } from 'next'
+import Link from 'next/link'
 
 import LightningInvoice from '@/components/lightning-invoice'
 import { decode } from '@/lib/decode'
@@ -13,16 +14,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const rawInvoice = (await params).raw_invoice
   const invoice = decode(rawInvoice)
 
-  const titlePrefix = invoice.description ? `${invoice.description} - ` : ''
+  const prefix = invoice.description ? `${invoice.description} — ` : ''
 
   return {
-    title: `${titlePrefix}Lightning Invoice - ln.fyi`,
-    description: `View detailed statistics and information about Lightning Network invoice ${
-      invoice.description
-    }. Amount: ₿${(invoice.amount ?? 0 / 100_000_000).toLocaleString()}`,
+    title: `${prefix}Lightning Invoice`,
+    description: `Lightning Network invoice${
+      invoice.description ? ` for "${invoice.description}"` : ''
+    }${invoice.amount ? ` — ${invoice.amount.toLocaleString()} sats` : ''}.`,
     openGraph: {
-      title: `${invoice.description} - Lightning Invoice Details`,
-      description: `View detailed statistics and information about Lightning Network invoice ${invoice.description}`,
+      title: `${invoice.description || 'Lightning Invoice'} — ln.fyi`,
+      description: `Lightning Network invoice${
+        invoice.description ? ` for "${invoice.description}"` : ''
+      }.`,
       type: 'website'
     }
   }
@@ -33,10 +36,14 @@ export default async function InvoicePage({ params }: PageProps) {
   const invoice = decode(rawInvoice)
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 px-4 py-8 md:p-4 flex items-center justify-center">
-      <div className="w-full max-w-md">
-        <LightningInvoice invoice={invoice} />
-      </div>
-    </div>
+    <main className="container mx-auto px-4 sm:px-6 py-10 sm:py-16 flex flex-col items-center gap-8">
+      <LightningInvoice invoice={invoice} />
+      <Link
+        href="/invoice"
+        className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+      >
+        Decode another
+      </Link>
+    </main>
   )
 }

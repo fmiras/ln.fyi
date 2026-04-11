@@ -39,7 +39,9 @@ type LightningNodeWithMetadata = {
 }
 
 export async function getLightningNode(publicKey: string): Promise<LightningNodeWithMetadata> {
-  const response = await fetch(`https://mempool.space/api/v1/lightning/nodes/${publicKey}`)
+  const response = await fetch(`https://mempool.space/api/v1/lightning/nodes/${publicKey}`, {
+    cache: 'no-store'
+  })
   const data: LightningNodeWithMetadata = await response.json()
   return data
 }

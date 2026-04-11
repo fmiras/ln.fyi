@@ -24,13 +24,17 @@ type LightningNode = {
 }
 
 export async function getLiquidityRanking(): Promise<LightningNode[]> {
-  const res = await fetch('https://mempool.space/api/v1/lightning/nodes/rankings/liquidity')
+  const res = await fetch('https://mempool.space/api/v1/lightning/nodes/rankings/liquidity', {
+    cache: 'no-store'
+  })
   const data: LightningNode[] = await res.json()
   return data
 }
 
 export async function getChannelRanking(): Promise<LightningNode[]> {
-  const res = await fetch('https://mempool.space/api/v1/lightning/nodes/rankings/connectivity')
+  const res = await fetch('https://mempool.space/api/v1/lightning/nodes/rankings/connectivity', {
+    cache: 'no-store'
+  })
   const data: LightningNode[] = await res.json()
   return data
 }

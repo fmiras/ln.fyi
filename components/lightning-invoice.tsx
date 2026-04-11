@@ -2,18 +2,12 @@
 
 import { useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
-import { Copy } from 'lucide-react'
+import { Copy, Check, Zap, Clock, User, FileText, Shield, Info } from 'lucide-react'
 import { formatDistance } from 'date-fns'
 
-import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { Invoice } from '@/lib/types'
-import { Switch } from '@/components/ui/switch'
-
-const paperTexture = {
-  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' viewBox='0 0 4 4'%3E%3Cpath fill='%23000000' fill-opacity='0.1' d='M1 3h1v1H1V3zm2-2h1v1H3V1z'%3E%3C/path%3E%3C/svg%3E")`
-}
 
 export default function LightningInvoice({
   invoice: { amount, payee, description, rawInvoice, expires, signature }
@@ -21,158 +15,150 @@ export default function LightningInvoice({
   invoice: Invoice
 }) {
   const [showBtc, setShowBtc] = useState(false)
-  const [simpleMode, setSimpleMode] = useState(true)
-  const amountSats = amount ?? 0 / 1000
-  const amountBtc = amountSats / 100000000
+  const [showRaw, setShowRaw] = useState(false)
+  const [copied, setCopied] = useState(false)
   const { toast } = useToast()
 
-  const truncateAddress = (address: string) => {
-    if (simpleMode) return `${address.slice(0, 6)}...${address.slice(-6)}`
-    return address
-  }
+  const amountSats = amount ?? 0
+  const amountBtc = amountSats / 100_000_000
 
-  const copyToClipboard = (text: string) => {
+  const truncate = (s: string) => `${s.slice(0, 10)}…${s.slice(-10)}`
+
+  const copy = (text: string, label: string) => {
     navigator.clipboard.writeText(text)
-    toast({
-      description: 'Invoice copied to clipboard',
-      duration: 2000
-    })
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+    toast({ description: `${label} copied to clipboard`, duration: 1800 })
   }
 
-  const expiresDate = expires ? new Date(expires) : new Date()
-
-  const isExpired = (expiresDate: Date) => {
-    return new Date() > expiresDate
-  }
+  const expiresDate = expires ? new Date(expires) : null
+  const isExpired = expiresDate ? new Date() > expiresDate : false
 
   return (
-    <div>
-      <Card
-        className="w-full max-w-[448px] min-w-[348px] bg-background shadow-lg rounded-lg overflow-hidden"
-        style={paperTexture}
-      >
-        <div className="bg-gradient-to-r from-muted to-muted/50 p-6 border-b border-border">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-foreground">Lightning Invoice</h1>
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-foreground">Simple</span>
-              <Switch
-                checked={simpleMode}
-                onCheckedChange={setSimpleMode}
-                className="transition-transform duration-300 hover:scale-105"
-              />
+    <div className="w-full max-w-md mx-auto">
+      <div className="relative rounded-2xl border border-border/60 bg-card/90 backdrop-blur-sm overflow-hidden shadow-xl shadow-orange-500/5">
+        <div className="absolute -top-24 -right-24 h-48 w-48 rounded-full bg-orange-500/10 blur-3xl pointer-events-none" />
+
+        <div className="relative p-6 pb-4 border-b border-border/60 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-orange-400 to-orange-600 shadow shadow-orange-500/30">
+              <Zap className="h-4 w-4 text-white fill-white" />
+            </div>
+            <div>
+              <div className="text-sm font-semibold">Lightning Invoice</div>
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                BOLT11
+              </div>
             </div>
           </div>
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+              isExpired
+                ? 'bg-red-500/10 text-red-600 dark:text-red-400'
+                : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+            }`}
+          >
+            <Clock className="h-3 w-3" />
+            {expiresDate
+              ? isExpired
+                ? `Expired ${formatDistance(expiresDate, new Date(), { addSuffix: true })}`
+                : `Valid for ${formatDistance(expiresDate, new Date())}`
+              : 'Unknown'}
+          </span>
         </div>
 
-        <div className="p-6 space-y-6">
-          <div className="flex justify-center">
-            <div className="bg-background p-2 rounded-lg shadow-inner">
-              <QRCodeSVG value={rawInvoice} size={180} />
-            </div>
+        <div className="relative p-6 flex flex-col items-center gap-4">
+          <div className="p-3 rounded-xl bg-white shadow-inner">
+            <QRCodeSVG value={rawInvoice} size={180} level="M" />
           </div>
 
-          <div
-            className="bg-muted p-4 rounded-lg shadow-inner cursor-pointer hover:scale-102 transition-transform"
-            onMouseEnter={() => setShowBtc(true)}
-            onMouseLeave={() => setShowBtc(false)}
+          <button
+            type="button"
+            onClick={() => setShowBtc((v) => !v)}
+            className="text-center w-full rounded-xl bg-muted/60 hover:bg-muted px-4 py-3 transition-colors"
+            aria-label="Toggle BTC / sats"
           >
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="font-medium text-muted-foreground">Amount Due</h2>
-              </div>
-              <span className="text-2xl font-bold text-foreground">
-                {showBtc ? `${amountBtc.toFixed(8)} BTC` : `${amountSats.toLocaleString()} sats`}
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              Amount due
+            </div>
+            <div className="text-2xl font-semibold tabular-nums tracking-tight">
+              {showBtc
+                ? `₿ ${amountBtc.toFixed(8)}`
+                : `${amountSats.toLocaleString()} sats`}
+            </div>
+          </button>
+        </div>
+
+        <div className="relative px-6 pb-4 flex flex-col gap-3">
+          {description && (
+            <Row icon={<FileText className="h-3.5 w-3.5" />} label="Description">
+              <span className="text-sm text-foreground text-right truncate">
+                {description}
               </span>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {payee && (
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Payee</p>
-                  <p className="text-sm text-gray-700 break-all">{truncateAddress(payee)}</p>
-                </div>
-                {simpleMode && (
-                  <p
-                    className={`text-sm font-medium ${
-                      isExpired(expiresDate) ? 'text-red-600' : 'text-emerald-600'
-                    }`}
-                  >
-                    {isExpired(expiresDate)
-                      ? `Expired ${formatDistance(expiresDate, new Date(), {
-                          addSuffix: true
-                        })}`
-                      : `Valid for ${formatDistance(expiresDate, new Date())}`}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {!simpleMode && signature && (
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Signature</p>
-                  <p className="text-sm text-gray-700 font-mono break-all">
-                    {truncateAddress(signature)}
-                  </p>
-                </div>
-                <div className="flex items-center">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-gray-500 hover:text-gray-700"
-                    onClick={() => copyToClipboard(signature)}
-                  >
-                    <Copy className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {description && (
-              <div>
-                <p className="text-sm font-medium text-gray-500">{!simpleMode && 'Description'}</p>
-                <p className="text-sm text-gray-700">{description}</p>
-              </div>
-            )}
-
-            {!simpleMode && (
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Expires</p>
-                  <p
-                    className={`text-sm font-medium ${
-                      isExpired(expiresDate) ? 'text-red-600' : 'text-emerald-600'
-                    }`}
-                  >
-                    {isExpired(expiresDate)
-                      ? `Expired ${formatDistance(expiresDate, new Date())} ago`
-                      : `Valid for ${formatDistance(expiresDate, new Date())}`}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Button
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-              onClick={() => copyToClipboard(rawInvoice)}
-            >
-              <Copy className="w-4 h-4 mr-2" /> Copy Invoice
-            </Button>
-          </div>
-
-          {!simpleMode && (
-            <div className="text-xs text-muted-foreground break-all bg-muted p-3 rounded-md">
-              <p className="font-medium mb-1">Raw Invoice:</p>
-              {rawInvoice}
-            </div>
+            </Row>
+          )}
+          {payee && (
+            <Row icon={<User className="h-3.5 w-3.5" />} label="Payee">
+              <code className="text-xs font-mono text-foreground">{truncate(payee)}</code>
+            </Row>
+          )}
+          {signature && (
+            <Row icon={<Shield className="h-3.5 w-3.5" />} label="Signature">
+              <code className="text-xs font-mono text-foreground">{truncate(signature)}</code>
+            </Row>
           )}
         </div>
-      </Card>
+
+        <div className="relative p-4 pt-0">
+          <Button
+            className="w-full bg-orange-500 hover:bg-orange-600 text-white h-11"
+            onClick={() => copy(rawInvoice, 'Invoice')}
+          >
+            {copied ? (
+              <Check className="w-4 h-4 mr-2" />
+            ) : (
+              <Copy className="w-4 h-4 mr-2" />
+            )}
+            {copied ? 'Copied!' : 'Copy full invoice'}
+          </Button>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setShowRaw((v) => !v)}
+          className="relative w-full flex items-center justify-center gap-1.5 px-6 py-3 border-t border-border/60 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Info className="h-3 w-3" />
+          {showRaw ? 'Hide raw invoice' : 'Show raw invoice'}
+        </button>
+        {showRaw && (
+          <div className="relative px-6 pb-6 text-[11px] text-muted-foreground break-all font-mono bg-muted/40 py-3">
+            {rawInvoice}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
+
+function Row({
+  icon,
+  label,
+  children
+}: {
+  icon: React.ReactNode
+  label: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 text-xs">
+      <div className="flex items-center gap-1.5 text-muted-foreground shrink-0">
+        {icon}
+        <span className="uppercase tracking-wider text-[10px]">{label}</span>
+      </div>
+      <div className="min-w-0 flex-1 text-right">{children}</div>
+    </div>
+  )
+}
+
+export { LightningInvoice }

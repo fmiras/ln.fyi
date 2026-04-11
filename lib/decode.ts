@@ -16,7 +16,7 @@ export function decode(invoice: string): Invoice {
       expires: decoded.timeExpireDateString,
       timestamp: decoded.timestampString
     }
-  } catch (error) {
-    redirect('/?error=invalid_invoice')
+  } catch {
+    redirect('/invoice?error=invalid_invoice')
   }
 }
