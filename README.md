@@ -17,7 +17,6 @@ Live at **[ln.fyi](https://ln.fyi)**.
 - **Node profiles** — per-node capacity/channel history, server metadata
   (AS, geo, Tor/clearnet sockets), and a public onchain transactions feed
   reconstructed from channel opens and closes.
-- **Geography** — capacity distribution by country.
 
 ## Stack
 
@@ -62,7 +61,6 @@ src/
   app/
     page.tsx              # Network overview (/)
     nodes/                # Node directory + profiles
-    geography/            # Country breakdown
     about/                # About page
     layout.tsx            # Root shell, fonts, metadata
   components/             # Panel, chart, stat, shell, hero-number, live-tick

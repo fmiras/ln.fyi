@@ -182,7 +182,6 @@ export default async function Home() {
             id="A04"
             title="BY COUNTRY"
             meta={`TOP 10 · ${countries?.length ?? 0} TOTAL`}
-            href="/geography"
             className="h-full border-0"
           >
             <div className="p-3 md:h-full md:overflow-hidden">

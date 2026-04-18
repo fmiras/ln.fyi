@@ -7,7 +7,7 @@ export const metadata = {
     "An open, real-time dashboard for the Bitcoin Lightning Network. Data from mempool.space.",
 };
 
-const GITHUB_URL = "https://github.com/fefo/ln.fyi";
+const GITHUB_URL = "https://github.com/fmiras/ln.fyi";
 
 export default function About() {
   return (
@@ -121,12 +121,6 @@ export default function About() {
                 num="02"
                 label="NODES"
                 description="Every public Lightning node, ranked by liquidity, connectivity or age. Searchable; click any row for the node&rsquo;s full profile."
-              />
-              <NavItem
-                href="/geography"
-                num="03"
-                label="GEOGRAPHY"
-                description="Where the network physically lives. Breakdown by country and by hosting network / autonomous system."
               />
             </div>
           </Panel>
