@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
   api,
@@ -12,8 +13,75 @@ import {
 } from "@/lib/api";
 import { AreaChart } from "@/components/chart";
 import { Panel } from "@/components/panel";
+import { ambossNode } from "@/lib/amboss";
+import {
+  SITE_NAME,
+  breadcrumbJsonLd,
+  buildMetadata,
+  datasetJsonLd,
+  jsonLdScript,
+  slugifyIsp,
+} from "@/lib/seo";
 
 export const revalidate = 300;
+// Allow any pubkey at runtime — we pre-render the top-ranked set but fall
+// back to on-demand ISR for everyone else.
+export const dynamicParams = true;
+
+// Pre-render the union of top-ranked nodes so the HTML is ready for Googlebot's
+// first crawl. Remaining nodes render on-demand and are then cached by ISR.
+export async function generateStaticParams() {
+  const [liq, conn, old] = await Promise.all([
+    safe(api.topByCapacity()),
+    safe(api.topByConnectivity()),
+    safe(api.oldest()),
+  ]);
+  const keys = new Set<string>();
+  for (const list of [liq, conn, old]) {
+    if (!list) continue;
+    for (const n of list) if (n.publicKey) keys.add(n.publicKey);
+  }
+  return Array.from(keys).map((pubkey) => ({ pubkey }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ pubkey: string }>;
+}): Promise<Metadata> {
+  const { pubkey } = await params;
+  const node = await safe(api.node(pubkey));
+  if (!node) {
+    return buildMetadata({
+      title: "Lightning node",
+      description: "Lightning Network node profile on ln.fyi.",
+      path: `/nodes/${pubkey}`,
+      noindex: true,
+    });
+  }
+  const alias = (node.alias || "Anonymous").trim();
+  const country =
+    node.country && typeof node.country === "object"
+      ? (node.country as { en?: string }).en
+      : undefined;
+  const isp = node.as_organization?.trim();
+  const capacityBtc = formatSats(node.capacity);
+  const channels = formatNumber(node.active_channel_count);
+  const firstSeen = node.first_seen ? formatDate(node.first_seen) : null;
+  const title = `${alias} — Lightning Node Profile`;
+  const descriptionParts = [
+    `${alias} is a public Lightning Network node holding ${capacityBtc} BTC across ${channels} active channels.`,
+    country ? `Hosted in ${country}${isp ? ` on ${isp}` : ""}.` : isp ? `Hosted on ${isp}.` : null,
+    firstSeen ? `First seen ${firstSeen}.` : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return buildMetadata({
+    title,
+    description: descriptionParts,
+    path: `/nodes/${pubkey}`,
+  });
+}
 
 const SECONDS_PER_BLOCK = 600;
 const EXPLORER = "https://mempool.space";
@@ -35,6 +103,7 @@ export default async function NodePage({
     closedA,
     closedB,
     closedC,
+    amboss,
   ] = await Promise.all([
     safe(api.node(pubkey)),
     safe(api.nodeStats(pubkey)),
@@ -45,6 +114,7 @@ export default async function NodePage({
     safe(api.nodeChannels(pubkey, "closed", 0)),
     safe(api.nodeChannels(pubkey, "closed", 10)),
     safe(api.nodeChannels(pubkey, "closed", 20)),
+    ambossNode(pubkey),
   ]);
 
   if (!node) return notFound();
@@ -66,6 +136,10 @@ export default async function NodePage({
   const torSockets = sockets.filter((s) => s.includes(".onion"));
   const colorFill =
     node.color && /^#[0-9a-f]{6}$/i.test(node.color) ? node.color : "#ff8a3d";
+  const isoCode = node.iso_code?.toLowerCase() ?? null;
+  const ispSlug = node.as_organization ? slugifyIsp(node.as_organization) : null;
+  const ambossWebsite = amboss?.socials?.info?.website?.trim() || null;
+  const ambossTwitter = amboss?.socials?.info?.twitter?.trim() || null;
 
   const avgChan =
     node.active_channel_count > 0
@@ -113,6 +187,29 @@ export default async function NodePage({
     .filter((i) => i.time > 0)
     .sort((a, b) => b.time - a.time)
     .slice(0, 24);
+
+  const nodeAlias = (node.alias || "Anonymous").trim();
+  const jsonLd = [
+    datasetJsonLd({
+      name: `${nodeAlias} — Lightning Node`,
+      description: `Public Lightning Network node ${nodeAlias} (${pubkey.slice(0, 12)}…) with ${formatSats(node.capacity)} BTC capacity across ${formatNumber(node.active_channel_count)} active channels.`,
+      path: `/nodes/${pubkey}`,
+      lastModified: node.updated_at,
+      keywords: [
+        nodeAlias,
+        "Lightning node",
+        "Lightning Network",
+        "Bitcoin",
+        country && country !== "—" ? country : null,
+        node.as_organization || null,
+      ].filter((x): x is string => !!x),
+    }),
+    breadcrumbJsonLd([
+      { name: SITE_NAME, path: "/" },
+      { name: "Nodes", path: "/nodes" },
+      { name: nodeAlias, path: `/nodes/${pubkey}` },
+    ]),
+  ];
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-auto md:overflow-hidden">
@@ -208,6 +305,7 @@ export default async function NodePage({
             <ServerMetadata
               asOrg={node.as_organization}
               asNumber={node.as_number}
+              ispSlug={ispSlug}
               latitude={node.latitude}
               longitude={node.longitude}
               updatedAt={node.updated_at}
@@ -215,6 +313,9 @@ export default async function NodePage({
               torSockets={torSockets}
               city={city}
               country={country}
+              isoCode={isoCode}
+              website={ambossWebsite}
+              twitter={ambossTwitter}
             />
           </Panel>
         </div>
@@ -258,6 +359,10 @@ export default async function NodePage({
           </Panel>
         </div>
       </div>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={jsonLdScript(jsonLd)}
+      />
     </div>
   );
 }
@@ -343,6 +448,7 @@ function Empty({ label = "NO DATA" }: { label?: string }) {
 function ServerMetadata({
   asOrg,
   asNumber,
+  ispSlug,
   latitude,
   longitude,
   updatedAt,
@@ -350,9 +456,13 @@ function ServerMetadata({
   torSockets,
   city,
   country,
+  isoCode,
+  website,
+  twitter,
 }: {
   asOrg?: string;
   asNumber?: number;
+  ispSlug?: string | null;
   latitude?: number;
   longitude?: number;
   updatedAt?: number;
@@ -360,6 +470,9 @@ function ServerMetadata({
   torSockets: string[];
   city: string;
   country: string;
+  isoCode?: string | null;
+  website?: string | null;
+  twitter?: string | null;
 }) {
   const hasCoords = typeof latitude === "number" && typeof longitude === "number";
   const geoLine =
@@ -371,9 +484,22 @@ function ServerMetadata({
   return (
     <div className="p-4 md:p-5 md:h-full md:overflow-auto flex flex-col">
       <MetaSection label="AUTONOMOUS SYSTEM">
-        <div className="ui-bold text-[15px] text-paper leading-tight">
-          {asOrg || "—"}
-        </div>
+        {asOrg ? (
+          ispSlug ? (
+            <Link
+              href={`/isp/${ispSlug}`}
+              className="ui-bold text-[15px] text-paper leading-tight hover:text-amber transition-colors"
+            >
+              {asOrg}
+            </Link>
+          ) : (
+            <div className="ui-bold text-[15px] text-paper leading-tight">
+              {asOrg}
+            </div>
+          )
+        ) : (
+          <div className="ui-bold text-[15px] text-paper leading-tight">—</div>
+        )}
         {asNumber ? (
           <div className="mono-xs text-paper-faint tabular mt-1">
             AS{asNumber}
@@ -383,10 +509,48 @@ function ServerMetadata({
 
       {(geoLine || hasCoords) && (
         <MetaSection label="GEOLOCATION">
-          <div className="ui text-[13px] text-paper">{geoLine || "—"}</div>
+          {isoCode && country && country !== "—" ? (
+            <Link
+              href={`/countries/${isoCode}`}
+              className="ui text-[13px] text-paper hover:text-amber transition-colors"
+            >
+              {geoLine || "—"}
+            </Link>
+          ) : (
+            <div className="ui text-[13px] text-paper">{geoLine || "—"}</div>
+          )}
           {hasCoords && (
             <div className="mono-xs text-paper-faint tabular mt-1">
               {latitude!.toFixed(4)}°, {longitude!.toFixed(4)}°
+            </div>
+          )}
+        </MetaSection>
+      )}
+
+      {(website || twitter) && (
+        <MetaSection label="OPERATOR">
+          {website && (
+            <div className="mono-xs text-paper truncate">
+              <a
+                href={website}
+                target="_blank"
+                rel="noreferrer nofollow"
+                className="hover:text-amber transition-colors"
+              >
+                {website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+              </a>
+            </div>
+          )}
+          {twitter && (
+            <div className="mono-xs text-paper-faint tabular mt-1">
+              <a
+                href={`https://twitter.com/${twitter.replace(/^@/, "")}`}
+                target="_blank"
+                rel="noreferrer nofollow"
+                className="hover:text-amber transition-colors"
+              >
+                @{twitter.replace(/^@/, "")}
+              </a>
             </div>
           )}
         </MetaSection>

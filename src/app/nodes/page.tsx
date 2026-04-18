@@ -1,7 +1,16 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { api, safe, formatSats, formatNumber, shortKey, relTime } from "@/lib/api";
+import { buildMetadata } from "@/lib/seo";
 
 export const revalidate = 600;
+
+export const metadata: Metadata = buildMetadata({
+  title: "Every public Lightning Network node",
+  description:
+    "The full directory of public Bitcoin Lightning Network nodes ranked by liquidity, connectivity or age. Live data from mempool.space.",
+  path: "/nodes",
+});
 
 type Rank = "liquidity" | "connectivity" | "age";
 

@@ -182,19 +182,24 @@ export default async function Home() {
             id="A04"
             title="BY COUNTRY"
             meta={`TOP 10 · ${countries?.length ?? 0} TOTAL`}
+            href="/countries"
             className="h-full border-0"
           >
             <div className="p-3 md:h-full md:overflow-hidden">
               <div className="space-y-2.5">
                 {topCountries.map((c, i) => (
-                  <div key={`${c.iso}-${i}`}>
+                  <Link
+                    key={`${c.iso}-${i}`}
+                    href={`/countries/${c.iso.toLowerCase()}`}
+                    className="group block"
+                  >
                     <div className="flex items-baseline justify-between gap-2 mb-1">
                       <div className="flex items-baseline gap-2 min-w-0">
                         <span className="mono-xs text-paper-faint tabular w-4">
                           {String(i + 1).padStart(2, "0")}
                         </span>
                         <span className="mono-xs text-amber">{c.iso}</span>
-                        <span className="ui text-[11px] text-paper truncate">
+                        <span className="ui text-[11px] text-paper truncate group-hover:text-amber transition-colors">
                           {c.name.en}
                         </span>
                       </div>
@@ -203,7 +208,7 @@ export default async function Home() {
                       </span>
                     </div>
                     <RankBar value={c.capacity} max={maxCountryCap} />
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>

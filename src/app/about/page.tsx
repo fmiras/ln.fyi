@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { Panel } from "@/components/panel";
+import { buildMetadata } from "@/lib/seo";
 
-export const metadata = {
-  title: "ln.fyi — About",
+export const metadata = buildMetadata({
+  title: "About",
   description:
-    "An open, real-time dashboard for the Bitcoin Lightning Network. Data from mempool.space.",
-};
+    "ln.fyi is an open, real-time editorial dashboard for the Bitcoin Lightning Network. Data from mempool.space. No accounts, no tracking, public domain.",
+  path: "/about",
+});
 
 const GITHUB_URL = "https://github.com/fmiras/ln.fyi";
 
@@ -122,6 +124,18 @@ export default function About() {
                 num="02"
                 label="NODES"
                 description="Every public Lightning node, ranked by liquidity, connectivity or age. Searchable; click any row for the node&rsquo;s full profile."
+              />
+              <NavItem
+                href="/countries"
+                num="03"
+                label="COUNTRIES"
+                description="Lightning capacity, nodes and top hubs for every country running the network. Click a country for its breakdown."
+              />
+              <NavItem
+                href="/isp"
+                num="04"
+                label="HOSTING"
+                description="Where the network physically runs — every hosting provider, ranked by capacity, with the nodes they carry."
               />
             </div>
           </Panel>

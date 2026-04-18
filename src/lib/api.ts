@@ -79,6 +79,15 @@ export type IspStat = {
   capacity: number;
 };
 
+export type IspRankingEntry = {
+  ispId: string;
+  name: string;
+  channels: number;
+  nodes: number;
+  capacity: number;
+  asNumbers: number[];
+};
+
 export type NodeDetail = {
   public_key: string;
   alias: string;
@@ -179,6 +188,28 @@ export const api = {
       unknownCapacity: number;
       ispRanking: [string, string, number, number, number][];
     }>("/lightning/nodes/isp-ranking", 3600),
+  // Typed projection of the raw isp-ranking tuple shape. mempool returns
+  // tuples in the order [ispId (AS numbers CSV), name, capacity, channels,
+  // nodes]. The ispId can be a comma-separated list when a single ISP owns
+  // multiple ASNs.
+  ispsRanked: async (): Promise<IspRankingEntry[]> => {
+    const raw = await j<{
+      ispRanking: [string, string, number, number, number][];
+    }>("/lightning/nodes/isp-ranking", 3600);
+    return (raw.ispRanking ?? []).map(
+      ([ispId, name, capacity, channels, nodes]) => ({
+        ispId,
+        name,
+        channels,
+        nodes,
+        capacity,
+        asNumbers: ispId
+          .split(",")
+          .map((s) => parseInt(s, 10))
+          .filter((n) => !Number.isNaN(n)),
+      }),
+    );
+  },
   node: (pubKey: string) => j<NodeDetail>(`/lightning/nodes/${pubKey}`, 600),
   nodeStats: (pubKey: string) =>
     j<NodeStatsPoint[]>(`/lightning/nodes/${pubKey}/statistics`, 600),
