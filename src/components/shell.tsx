@@ -9,9 +9,9 @@ const NAV = [
 
 export function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative min-h-screen flex flex-col">
+    <div className="relative h-[100svh] flex flex-col overflow-hidden">
       <TopBar />
-      <main className="relative flex-1 flex flex-col">{children}</main>
+      <main className="relative flex-1 flex flex-col min-h-0">{children}</main>
     </div>
   );
 }

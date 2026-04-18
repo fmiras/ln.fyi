@@ -115,40 +115,40 @@ export default async function NodePage({
     .slice(0, 24);
 
   return (
-    <div className="flex-1 flex flex-col">
-      {/* Header — no breadcrumb, site nav handles that */}
-      <div className="rule-b px-4 md:px-8 lg:px-12 py-6 md:py-10">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5 md:gap-8">
+    <div className="flex-1 flex flex-col min-h-0 overflow-auto md:overflow-hidden">
+      {/* Header — compact, single-line on desktop so the dashboard fits in the viewport */}
+      <div className="rule-b px-4 md:px-6 lg:px-8 py-3 md:py-4 shrink-0">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-6">
           <div className="min-w-0 flex-1">
-            <div className="mono-xs text-amber mb-3">§ NODE PROFILE</div>
-            <div className="flex items-center gap-3 md:gap-5">
+            <div className="mono-xs text-amber mb-1.5">§ NODE PROFILE</div>
+            <div className="flex items-center gap-2.5 md:gap-3">
               <span
-                className="inline-block w-3 h-3 md:w-4 md:h-4 rounded-full shrink-0"
+                className="inline-block w-2.5 h-2.5 md:w-3 md:h-3 rounded-full shrink-0"
                 style={{
                   background: colorFill,
-                  boxShadow: `0 0 18px ${colorFill}66`,
+                  boxShadow: `0 0 14px ${colorFill}66`,
                 }}
               />
-              <h1 className="display text-[28px] md:text-[64px] lg:text-[80px] leading-[0.9] text-paper truncate">
+              <h1 className="display text-[24px] md:text-[32px] lg:text-[40px] leading-[0.95] text-paper truncate">
                 {(node.alias || "ANONYMOUS").toUpperCase()}
               </h1>
             </div>
-            <div className="mono-xs text-paper-faint tabular break-all mt-3 max-w-3xl">
+            <div className="mono-xs text-paper-faint tabular break-all mt-1.5 max-w-3xl hidden md:block">
               {pubkey}
             </div>
           </div>
-          <div className="shrink-0 md:text-right md:pb-2">
-            <div className="mono-xs text-paper-faint mb-1">TOTAL CAPACITY</div>
-            <div className="display tabular text-[44px] md:text-[64px] lg:text-[76px] leading-[0.9] text-paper">
+          <div className="shrink-0 md:text-right">
+            <div className="mono-xs text-paper-faint mb-0.5">TOTAL CAPACITY</div>
+            <div className="display tabular text-[28px] md:text-[32px] lg:text-[40px] leading-[0.95] text-paper">
               {formatSats(node.capacity)}
+              <span className="mono-xs text-amber ml-2 align-middle">₿ BTC</span>
             </div>
-            <div className="mono-xs text-amber mt-2">₿ BTC</div>
           </div>
         </div>
       </div>
 
       {/* KPI row */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-[1px] bg-[color:var(--rule)] rule-b">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-[1px] bg-[color:var(--rule)] rule-b shrink-0">
         <StatCell label="ACTIVE CHANNELS" value={formatNumber(node.active_channel_count)} />
         <StatCell
           label="OPENED"
@@ -178,7 +178,7 @@ export default async function NodePage({
       </div>
 
       {/* Body grid: 2×2. Left column is charts, right column is metadata + tx feed. */}
-      <div className="flex flex-col md:flex-1 md:grid md:grid-cols-12 md:grid-rows-2 md:gap-[1px] md:bg-[color:var(--rule)] md:min-h-[720px]">
+      <div className="flex flex-col md:flex-1 md:min-h-0 md:grid md:grid-cols-12 md:grid-rows-2 md:gap-[1px] md:bg-[color:var(--rule)]">
         {/* Top-left: capacity chart */}
         <div className="bg-ink h-[280px] md:h-auto md:col-span-8 md:row-span-1 rule-b md:border-b-0">
           <Panel
@@ -316,10 +316,10 @@ function StatCell({
   noTabular?: boolean;
 }) {
   return (
-    <div className="bg-ink px-4 py-3">
-      <div className="mono-xs text-paper-faint mb-2">{label}</div>
+    <div className="bg-ink px-4 py-2.5">
+      <div className="mono-xs text-paper-faint mb-1">{label}</div>
       <div
-        className={`display text-[20px] md:text-[24px] leading-none text-paper truncate ${
+        className={`display text-[18px] md:text-[20px] leading-none text-paper truncate ${
           noTabular ? "" : "tabular"
         }`}
       >
@@ -362,11 +362,15 @@ function ServerMetadata({
   country: string;
 }) {
   const hasCoords = typeof latitude === "number" && typeof longitude === "number";
+  const geoLine =
+    [city, country].filter((s) => s && s !== "—").join(" · ") || null;
+  const allSockets = [
+    ...clearSockets.map((s) => ({ socket: s, kind: "CLEAR" as const })),
+    ...torSockets.map((s) => ({ socket: s, kind: "TOR" as const })),
+  ];
   return (
-    <div className="p-5 md:p-6 md:h-full md:overflow-auto divide-y divide-[color:var(--rule)] [&>*]:py-4 first:[&>*]:pt-0 last:[&>*]:pb-0">
-      {/* AS / Hosting */}
-      <div>
-        <div className="mono-xs text-paper-faint mb-2">AUTONOMOUS SYSTEM</div>
+    <div className="p-4 md:p-5 md:h-full md:overflow-auto flex flex-col">
+      <MetaSection label="AUTONOMOUS SYSTEM">
         <div className="ui-bold text-[15px] text-paper leading-tight">
           {asOrg || "—"}
         </div>
@@ -375,52 +379,63 @@ function ServerMetadata({
             AS{asNumber}
           </div>
         ) : null}
-      </div>
+      </MetaSection>
 
-      {/* Geo */}
-      {(hasCoords || (city && city !== "—") || (country && country !== "—")) && (
-        <div>
-          <div className="mono-xs text-paper-faint mb-2">GEOLOCATION</div>
-          <div className="ui text-[13px] text-paper">
-            {[city, country].filter((s) => s && s !== "—").join(" · ") || "—"}
-          </div>
+      {(geoLine || hasCoords) && (
+        <MetaSection label="GEOLOCATION">
+          <div className="ui text-[13px] text-paper">{geoLine || "—"}</div>
           {hasCoords && (
             <div className="mono-xs text-paper-faint tabular mt-1">
               {latitude!.toFixed(4)}°, {longitude!.toFixed(4)}°
             </div>
           )}
-        </div>
+        </MetaSection>
       )}
 
-      {/* Network addresses */}
-      <div>
-        <div className="flex items-baseline justify-between mb-2">
-          <div className="mono-xs text-paper-faint">NETWORK ADDRESSES</div>
-          <div className="mono-xs text-paper-faint tabular">
-            {clearSockets.length + torSockets.length}
-          </div>
-        </div>
-        {clearSockets.length + torSockets.length === 0 ? (
+      <MetaSection
+        label="NETWORK ADDRESSES"
+        trailing={
+          <span className="mono-xs text-paper-faint tabular">
+            {allSockets.length}
+          </span>
+        }
+      >
+        {allSockets.length === 0 ? (
           <div className="mono-xs text-paper-faint">—</div>
         ) : (
-          <div className="space-y-1.5">
-            {clearSockets.map((s) => (
-              <SocketRow key={s} socket={s} kind="CLEAR" />
-            ))}
-            {torSockets.map((s) => (
-              <SocketRow key={s} socket={s} kind="TOR" />
+          <div className="flex flex-col gap-1.5">
+            {allSockets.map(({ socket, kind }) => (
+              <SocketRow key={socket} socket={socket} kind={kind} />
             ))}
           </div>
         )}
-      </div>
+      </MetaSection>
 
-      {/* Last seen */}
-      <div>
-        <div className="mono-xs text-paper-faint mb-2">LAST UPDATE</div>
+      <MetaSection label="LAST UPDATE">
         <div className="mono tabular text-paper text-[12px]">
           {updatedAt ? formatDate(updatedAt) : "—"}
         </div>
+      </MetaSection>
+    </div>
+  );
+}
+
+function MetaSection({
+  label,
+  trailing,
+  children,
+}: {
+  label: string;
+  trailing?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="py-4 border-t border-[color:var(--rule)] first:border-t-0 first:pt-0 last:pb-0">
+      <div className="flex items-baseline justify-between gap-2 mb-1.5">
+        <div className="mono-xs text-paper-faint">{label}</div>
+        {trailing}
       </div>
+      {children}
     </div>
   );
 }
@@ -471,12 +486,7 @@ function TxRow({ item }: { item: FeedItem }) {
   const meta = kindMeta(item.kind);
   const when = formatRelative(item.time);
   return (
-    <a
-      href={`${EXPLORER}/lightning/channel/${item.channelId}`}
-      target="_blank"
-      rel="noreferrer"
-      className="group grid grid-cols-[auto_1fr_auto] md:grid-cols-[auto_auto_1fr_auto_auto] items-center gap-x-4 md:gap-x-5 px-4 md:px-5 py-[9px] rule-b hover:bg-[#ffffff05] transition-colors"
-    >
+    <div className="group grid grid-cols-[auto_1fr_auto] md:grid-cols-[auto_auto_1fr_auto_auto] items-center gap-x-4 md:gap-x-5 px-4 md:px-5 py-[9px] rule-b hover:bg-[#ffffff05] transition-colors">
       {/* WHEN */}
       <div className="min-w-0">
         <div className="mono text-[11px] text-paper tabular">
@@ -513,8 +523,7 @@ function TxRow({ item }: { item: FeedItem }) {
           </span>
           <Link
             href={`/nodes/${item.peer.public_key}`}
-            className="ui text-[13px] text-paper truncate group-hover:text-amber transition-colors"
-            onClick={(e) => e.stopPropagation()}
+            className="ui text-[13px] text-paper truncate hover:text-amber transition-colors"
           >
             {item.peer.alias || "—"}
           </Link>
@@ -534,16 +543,19 @@ function TxRow({ item }: { item: FeedItem }) {
         </div>
       </div>
 
-      {/* BLOCK */}
-      <div className="hidden md:block text-right shrink-0">
-        <div className="mono-xs tabular text-paper-dim">
+      {/* BLOCK — external link to mempool explorer */}
+      <a
+        href={`${EXPLORER}/lightning/channel/${item.channelId}`}
+        target="_blank"
+        rel="noreferrer"
+        className="hidden md:block text-right shrink-0 hover:text-amber transition-colors"
+      >
+        <div className="mono-xs tabular text-paper-dim group-hover:text-paper">
           #{formatNumber(item.block)}
         </div>
-        <div className="mono-xs text-paper-faint/60 tabular group-hover:text-amber">
-          ↗
-        </div>
-      </div>
-    </a>
+        <div className="mono-xs text-paper-faint/60 tabular">↗</div>
+      </a>
+    </div>
   );
 }
 

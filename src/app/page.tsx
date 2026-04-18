@@ -70,7 +70,7 @@ export default async function Home() {
   const maxCountryCap = topCountries[0]?.capacity ?? 1;
 
   return (
-    <div className="flex-1 flex flex-col md:min-h-0">
+    <div className="flex-1 flex flex-col min-h-0 overflow-auto md:overflow-hidden">
       {/* KPI STRIP — responsive 2/3/6 cols, 1px grid gaps render as hairlines */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-[1px] bg-[color:var(--rule)] rule-b">
         <KpiCell

@@ -30,7 +30,7 @@ export default async function NodesPage({
   ];
 
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col min-h-0">
       {/* Page header */}
       <div className="rule-b px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-end md:justify-between gap-3">
         <div>
@@ -96,8 +96,8 @@ export default async function NodesPage({
         <div className="col-span-2 text-right">FIRST SEEN</div>
       </div>
 
-      {/* Rows */}
-      <div className="flex-1">
+      {/* Rows — scrollable list inside the fixed-viewport shell */}
+      <div className="flex-1 min-h-0 overflow-auto">
         {active.map((n, i) => {
           const firstSeen = (n as { firstSeen?: number }).firstSeen;
           return (

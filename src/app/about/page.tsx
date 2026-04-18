@@ -11,7 +11,7 @@ const GITHUB_URL = "https://github.com/fmiras/ln.fyi";
 
 export default function About() {
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col min-h-0 overflow-auto">
       {/* Page header */}
       <div className="rule-b px-4 md:px-8 lg:px-12 py-4 md:py-8 flex flex-col md:flex-row md:items-end md:justify-between gap-3">
         <div>
@@ -37,8 +37,9 @@ export default function About() {
           <Panel id="B01" title="WHAT THIS IS" className="h-full border-0">
             <div className="p-6 md:p-10 lg:p-12 space-y-5 md:space-y-6">
               <p className="ui text-[15px] md:text-[19px] lg:text-[21px] leading-[1.5] text-paper">
-                <span className="ui-bold text-amber">ln.fyi</span> is an open
-                dashboard for the Bitcoin Lightning Network — a real-time
+                <span className="ui-bold text-amber">ln.fyi</span>{" "}
+                is an open dashboard for the Bitcoin Lightning Network — a
+                real-time
                 control-room view of every public node, channel and satoshi
                 flowing through the network&apos;s second layer.
               </p>
