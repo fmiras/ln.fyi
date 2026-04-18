@@ -1,36 +1,83 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ln.fyi
 
-## Getting Started
+**An editorial atlas of the Bitcoin Lightning Network.**
 
-First, run the development server:
+A live, open dashboard tracking capacity, nodes, channels and onchain activity
+across Lightning. No accounts, no tracking, no API keys.
+
+Live at **[ln.fyi](https://ln.fyi)**.
+
+---
+
+## What's inside
+
+- **Network overview** — total capacity, node/channel counts, 30-day deltas,
+  multi-year history charts.
+- **Node directory** — top nodes by capacity and connectivity, searchable.
+- **Node profiles** — per-node capacity/channel history, server metadata
+  (AS, geo, Tor/clearnet sockets), and a public onchain transactions feed
+  reconstructed from channel opens and closes.
+- **Geography** — capacity distribution by country.
+
+## Stack
+
+- [Next.js 16](https://nextjs.org) (App Router, RSC, route-level `revalidate`)
+- React 19, TypeScript 5
+- Tailwind CSS 4
+- IBM Plex Sans / Sans Condensed / Mono
+- Data: [mempool.space Lightning REST API](https://mempool.space/docs/api/rest)
+
+> The site currently reads from the **emzy.de mempool mirror** — the primary
+> mempool.space instance stopped updating its Lightning statistics endpoints
+> in January 2026. Override with `NEXT_PUBLIC_MEMPOOL_BASE` if you run your
+> own mirror.
+
+## Running locally
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open <http://localhost:3000>.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | Action |
+| --- | --- |
+| `npm run dev` | Start the dev server |
+| `npm run build` | Production build |
+| `npm run start` | Serve the production build |
 
-## Learn More
+### Environment
 
-To learn more about Next.js, take a look at the following resources:
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `NEXT_PUBLIC_MEMPOOL_BASE` | `https://mempool.emzy.de/api/v1` | Base URL for the mempool Lightning API |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project layout
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+src/
+  app/
+    page.tsx              # Network overview (/)
+    nodes/                # Node directory + profiles
+    geography/            # Country breakdown
+    about/                # About page
+    layout.tsx            # Root shell, fonts, metadata
+  components/             # Panel, chart, stat, shell, hero-number, live-tick
+  lib/
+    api.ts                # mempool Lightning API client + formatters
+```
 
-## Deploy on Vercel
+All data fetches are server-side with Next.js cache revalidation
+(typically 120–600s). There is no client-side polling.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Contributing
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This is a personal project, but issues and PRs are welcome — especially for
+data-quality fixes, accessibility, and new editorial views of the network.
+
+## License
+
+Public domain.
