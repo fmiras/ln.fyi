@@ -5,14 +5,18 @@ import {
   safe,
   formatSats,
   formatNumber,
-  shortKey,
   formatDate,
   compactNumber,
+  shortKey,
+  type ChannelListItem,
 } from "@/lib/api";
 import { AreaChart } from "@/components/chart";
 import { Panel } from "@/components/panel";
 
-export const revalidate = 600;
+export const revalidate = 300;
+
+const SECONDS_PER_BLOCK = 600;
+const EXPLORER = "https://mempool.space";
 
 export default async function NodePage({
   params,
@@ -21,9 +25,26 @@ export default async function NodePage({
 }) {
   const { pubkey } = await params;
 
-  const [node, stats] = await Promise.all([
+  const [
+    node,
+    stats,
+    tipHeight,
+    openA,
+    openB,
+    openC,
+    closedA,
+    closedB,
+    closedC,
+  ] = await Promise.all([
     safe(api.node(pubkey)),
     safe(api.nodeStats(pubkey)),
+    safe(api.tipHeight()),
+    safe(api.nodeChannels(pubkey, "open", 0)),
+    safe(api.nodeChannels(pubkey, "open", 10)),
+    safe(api.nodeChannels(pubkey, "open", 20)),
+    safe(api.nodeChannels(pubkey, "closed", 0)),
+    safe(api.nodeChannels(pubkey, "closed", 10)),
+    safe(api.nodeChannels(pubkey, "closed", 20)),
   ]);
 
   if (!node) return notFound();
@@ -41,6 +62,8 @@ export default async function NodePage({
       ? (node.city as { en?: string }).en
       : undefined) ?? "—";
   const sockets = node.sockets ? node.sockets.split(",").filter(Boolean) : [];
+  const clearSockets = sockets.filter((s) => !s.includes(".onion"));
+  const torSockets = sockets.filter((s) => s.includes(".onion"));
   const colorFill =
     node.color && /^#[0-9a-f]{6}$/i.test(node.color) ? node.color : "#ff8a3d";
 
@@ -49,49 +72,82 @@ export default async function NodePage({
       ? node.capacity / node.active_channel_count
       : 0;
 
+  // Build the public-tx feed. Opens get an approximate time derived from the
+  // channel's funding block height (current tip minus delta * 600s). Closes
+  // already carry a real closing_date. Deduped by channel id in case the
+  // sliding-window pagination overlaps.
+  const now = Math.floor(Date.now() / 1000);
+  const tip = tipHeight ?? 0;
+  const opens = dedupeById(concat(openA, openB, openC));
+  const closes = dedupeById(concat(closedA, closedB, closedC));
+
+  const feed: FeedItem[] = [
+    ...opens.map((c): FeedItem => {
+      const block = parseInt(c.short_id.split("x")[0] ?? "0", 10) || 0;
+      const approx = tip > 0 && block > 0
+        ? now - (tip - block) * SECONDS_PER_BLOCK
+        : 0;
+      return {
+        kind: "OPEN",
+        time: approx,
+        approx: true,
+        capacity: c.capacity,
+        peer: c.node,
+        block,
+        channelId: c.id,
+      };
+    }),
+    ...closes.map((c): FeedItem => {
+      const block = parseInt(c.short_id.split("x")[0] ?? "0", 10) || 0;
+      return {
+        kind: closingKind(c.closing_reason),
+        time: c.closing_date ?? 0,
+        approx: false,
+        capacity: c.capacity,
+        peer: c.node,
+        block,
+        channelId: c.id,
+      };
+    }),
+  ]
+    .filter((i) => i.time > 0)
+    .sort((a, b) => b.time - a.time)
+    .slice(0, 24);
+
   return (
     <div className="flex-1 flex flex-col">
-      {/* Breadcrumb + header */}
-      <div className="rule-b px-4 md:px-6 py-4">
-        <div className="flex items-center gap-2 mb-3">
-          <Link href="/nodes" className="mono-xs text-paper-faint hover:text-amber">
-            ← NODES
-          </Link>
-          <span className="mono-xs text-paper-faint">/</span>
-          <span className="mono-xs text-paper-faint tabular truncate">
-            {shortKey(pubkey)}
-          </span>
-        </div>
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 md:gap-6">
-          <div className="min-w-0">
-            <div className="mono-xs text-amber mb-2">§ NODE PROFILE</div>
-            <div className="flex items-center gap-3 md:gap-4">
+      {/* Header — no breadcrumb, site nav handles that */}
+      <div className="rule-b px-4 md:px-8 lg:px-12 py-6 md:py-10">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5 md:gap-8">
+          <div className="min-w-0 flex-1">
+            <div className="mono-xs text-amber mb-3">§ NODE PROFILE</div>
+            <div className="flex items-center gap-3 md:gap-5">
               <span
-                className="inline-block w-3 h-3 rounded-full shrink-0"
+                className="inline-block w-3 h-3 md:w-4 md:h-4 rounded-full shrink-0"
                 style={{
                   background: colorFill,
-                  boxShadow: `0 0 14px ${colorFill}66`,
+                  boxShadow: `0 0 18px ${colorFill}66`,
                 }}
               />
-              <h1 className="display text-[28px] md:text-[56px] leading-none text-paper truncate">
+              <h1 className="display text-[28px] md:text-[64px] lg:text-[80px] leading-[0.9] text-paper truncate">
                 {(node.alias || "ANONYMOUS").toUpperCase()}
               </h1>
             </div>
-            <div className="mono-xs text-paper-faint tabular break-all mt-2">
+            <div className="mono-xs text-paper-faint tabular break-all mt-3 max-w-3xl">
               {pubkey}
             </div>
           </div>
-          <div className="shrink-0 md:text-right">
+          <div className="shrink-0 md:text-right md:pb-2">
             <div className="mono-xs text-paper-faint mb-1">TOTAL CAPACITY</div>
-            <div className="display tabular text-[40px] md:text-[52px] leading-none text-paper">
+            <div className="display tabular text-[44px] md:text-[64px] lg:text-[76px] leading-[0.9] text-paper">
               {formatSats(node.capacity)}
             </div>
-            <div className="mono-xs text-amber mt-1">₿ BTC</div>
+            <div className="mono-xs text-amber mt-2">₿ BTC</div>
           </div>
         </div>
       </div>
 
-      {/* KPI row — 2 cols mobile, 6 cols desktop */}
+      {/* KPI row */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-[1px] bg-[color:var(--rule)] rule-b">
         <StatCell label="ACTIVE CHANNELS" value={formatNumber(node.active_channel_count)} />
         <StatCell
@@ -121,8 +177,9 @@ export default async function NodePage({
         />
       </div>
 
-      {/* Charts — stack on mobile, grid at md+ */}
-      <div className="flex flex-col md:flex-1 md:grid md:grid-cols-12 md:grid-rows-2 md:gap-[1px] md:bg-[color:var(--rule)] md:min-h-[560px]">
+      {/* Body grid: 2×2. Left column is charts, right column is metadata + tx feed. */}
+      <div className="flex flex-col md:flex-1 md:grid md:grid-cols-12 md:grid-rows-2 md:gap-[1px] md:bg-[color:var(--rule)] md:min-h-[720px]">
+        {/* Top-left: capacity chart */}
         <div className="bg-ink h-[280px] md:h-auto md:col-span-8 md:row-span-1 rule-b md:border-b-0">
           <Panel
             id="N01"
@@ -139,97 +196,113 @@ export default async function NodePage({
             </div>
           </Panel>
         </div>
+
+        {/* Top-right: server metadata — merged network + infra */}
         <div className="bg-ink md:col-span-4 md:row-span-1 rule-b md:border-b-0">
           <Panel
             id="N02"
-            title="NETWORK ADDRESSES"
-            meta={`${sockets.length} SOCKETS`}
+            title="SERVER METADATA"
+            meta="INFRA · NETWORK"
             className="h-full border-0"
           >
-            <div className="p-3 md:h-full md:overflow-auto">
-              {sockets.length > 0 ? (
-                <div className="space-y-1">
-                  {sockets.map((s) => (
-                    <div
-                      key={s}
-                      className="flex items-baseline justify-between gap-3 py-1.5 rule-b"
-                    >
-                      <div className="mono text-paper text-[11px] truncate">
-                        {s}
-                      </div>
-                      <div className="mono-xs text-paper-faint shrink-0">
-                        {s.includes(".onion") ? "TOR" : "CLEAR"}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <Empty />
-              )}
-            </div>
+            <ServerMetadata
+              asOrg={node.as_organization}
+              asNumber={node.as_number}
+              latitude={node.latitude}
+              longitude={node.longitude}
+              updatedAt={node.updated_at}
+              clearSockets={clearSockets}
+              torSockets={torSockets}
+              city={city}
+              country={country}
+            />
           </Panel>
         </div>
-        <div className="bg-ink h-[240px] md:h-auto md:col-span-8 md:row-span-1 rule-b md:border-b-0">
+
+        {/* Bottom-left: channels chart */}
+        <div className="bg-ink h-[240px] md:h-auto md:col-span-4 md:row-span-1 rule-b md:border-b-0">
           <Panel
             id="N03"
             title="CHANNEL COUNT"
-            meta="COUNT · DAILY"
+            meta="DAILY"
             className="h-full border-0"
           >
             <div className="p-3 h-full">
               {chanPoints.length > 1 ? (
-                <AreaChart data={chanPoints} accent="var(--paper)" format="number" compact />
+                <AreaChart
+                  data={chanPoints}
+                  accent="var(--paper)"
+                  format="number"
+                  compact
+                />
               ) : (
                 <Empty />
               )}
             </div>
           </Panel>
         </div>
-        <div className="bg-ink md:col-span-4 md:row-span-1">
+
+        {/* Bottom-right: public transactions feed */}
+        <div className="bg-ink md:col-span-8 md:row-span-1">
           <Panel
             id="N04"
-            title="INFRASTRUCTURE"
-            meta="AS / HOSTING"
+            title="PUBLIC TRANSACTIONS"
+            meta={`ONCHAIN · ${feed.length} RECENT`}
             className="h-full border-0"
           >
-            <div className="p-4 md:h-full flex flex-col gap-5">
-              <div>
-                <div className="mono-xs text-paper-faint mb-1">
-                  AUTONOMOUS SYSTEM
-                </div>
-                <div className="ui text-[16px] text-paper">
-                  {node.as_organization || "—"}
-                </div>
-                {node.as_number && (
-                  <div className="mono-xs text-paper-faint tabular mt-0.5">
-                    AS{node.as_number}
-                  </div>
-                )}
-              </div>
-              <div>
-                <div className="mono-xs text-paper-faint mb-1">LAST UPDATE</div>
-                <div className="mono tabular text-paper text-[13px]">
-                  {node.updated_at ? formatDate(node.updated_at) : "—"}
-                </div>
-              </div>
-              {typeof node.longitude === "number" &&
-                typeof node.latitude === "number" && (
-                  <div>
-                    <div className="mono-xs text-paper-faint mb-1">
-                      COORDINATES
-                    </div>
-                    <div className="mono tabular text-paper text-[13px]">
-                      {node.latitude.toFixed(4)}°, {node.longitude.toFixed(4)}°
-                    </div>
-                  </div>
-                )}
-            </div>
+            {feed.length > 0 ? (
+              <TxFeed items={feed} />
+            ) : (
+              <Empty label="NO ONCHAIN ACTIVITY" />
+            )}
           </Panel>
         </div>
       </div>
     </div>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/*  Feed types + helpers                                                */
+/* ------------------------------------------------------------------ */
+
+type FeedKind = "OPEN" | "COOP_CLOSE" | "FORCE_CLOSE" | "BREACH_CLOSE";
+
+type FeedItem = {
+  kind: FeedKind;
+  time: number; // unix seconds
+  approx: boolean; // true when derived from block height
+  capacity: number; // sats
+  peer: ChannelListItem["node"];
+  block: number;
+  channelId: string;
+};
+
+function closingKind(code: number | null): FeedKind {
+  if (code === 1) return "COOP_CLOSE";
+  if (code === 2 || code === 3) return "FORCE_CLOSE";
+  if (code === 4) return "BREACH_CLOSE";
+  return "COOP_CLOSE";
+}
+
+function concat<T>(...xs: (T[] | null | undefined)[]): T[] {
+  return xs.flatMap((x) => x ?? []);
+}
+
+function dedupeById(xs: ChannelListItem[]): ChannelListItem[] {
+  const seen = new Set<string>();
+  const out: ChannelListItem[] = [];
+  for (const c of xs) {
+    if (seen.has(c.id)) continue;
+    seen.add(c.id);
+    out.push(c);
+  }
+  return out;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Small components                                                    */
+/* ------------------------------------------------------------------ */
 
 function StatCell({
   label,
@@ -259,10 +332,280 @@ function StatCell({
   );
 }
 
-function Empty() {
+function Empty({ label = "NO DATA" }: { label?: string }) {
   return (
     <div className="h-full flex items-center justify-center mono-xs text-paper-faint">
-      NO DATA
+      {label}
     </div>
   );
+}
+
+function ServerMetadata({
+  asOrg,
+  asNumber,
+  latitude,
+  longitude,
+  updatedAt,
+  clearSockets,
+  torSockets,
+  city,
+  country,
+}: {
+  asOrg?: string;
+  asNumber?: number;
+  latitude?: number;
+  longitude?: number;
+  updatedAt?: number;
+  clearSockets: string[];
+  torSockets: string[];
+  city: string;
+  country: string;
+}) {
+  const hasCoords = typeof latitude === "number" && typeof longitude === "number";
+  return (
+    <div className="p-5 md:p-6 md:h-full md:overflow-auto divide-y divide-[color:var(--rule)] [&>*]:py-4 first:[&>*]:pt-0 last:[&>*]:pb-0">
+      {/* AS / Hosting */}
+      <div>
+        <div className="mono-xs text-paper-faint mb-2">AUTONOMOUS SYSTEM</div>
+        <div className="ui-bold text-[15px] text-paper leading-tight">
+          {asOrg || "—"}
+        </div>
+        {asNumber ? (
+          <div className="mono-xs text-paper-faint tabular mt-1">
+            AS{asNumber}
+          </div>
+        ) : null}
+      </div>
+
+      {/* Geo */}
+      {(hasCoords || (city && city !== "—") || (country && country !== "—")) && (
+        <div>
+          <div className="mono-xs text-paper-faint mb-2">GEOLOCATION</div>
+          <div className="ui text-[13px] text-paper">
+            {[city, country].filter((s) => s && s !== "—").join(" · ") || "—"}
+          </div>
+          {hasCoords && (
+            <div className="mono-xs text-paper-faint tabular mt-1">
+              {latitude!.toFixed(4)}°, {longitude!.toFixed(4)}°
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Network addresses */}
+      <div>
+        <div className="flex items-baseline justify-between mb-2">
+          <div className="mono-xs text-paper-faint">NETWORK ADDRESSES</div>
+          <div className="mono-xs text-paper-faint tabular">
+            {clearSockets.length + torSockets.length}
+          </div>
+        </div>
+        {clearSockets.length + torSockets.length === 0 ? (
+          <div className="mono-xs text-paper-faint">—</div>
+        ) : (
+          <div className="space-y-1.5">
+            {clearSockets.map((s) => (
+              <SocketRow key={s} socket={s} kind="CLEAR" />
+            ))}
+            {torSockets.map((s) => (
+              <SocketRow key={s} socket={s} kind="TOR" />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Last seen */}
+      <div>
+        <div className="mono-xs text-paper-faint mb-2">LAST UPDATE</div>
+        <div className="mono tabular text-paper text-[12px]">
+          {updatedAt ? formatDate(updatedAt) : "—"}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SocketRow({ socket, kind }: { socket: string; kind: "CLEAR" | "TOR" }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3">
+      <div className="mono text-paper text-[11px] truncate min-w-0">
+        {socket}
+      </div>
+      <div
+        className={`mono-xs shrink-0 tracking-wide ${
+          kind === "TOR" ? "text-amber" : "text-paper-faint"
+        }`}
+      >
+        {kind}
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Public transactions feed                                            */
+/* ------------------------------------------------------------------ */
+
+function TxFeed({ items }: { items: FeedItem[] }) {
+  return (
+    <div className="h-full overflow-auto">
+      <div className="grid grid-cols-[auto_1fr_auto] md:grid-cols-[auto_auto_1fr_auto_auto] gap-x-4 md:gap-x-5 px-4 md:px-5 py-2 sticky top-0 bg-ink rule-b z-10">
+        <div className="mono-xs text-paper-faint">WHEN</div>
+        <div className="mono-xs text-paper-faint hidden md:block">TYPE</div>
+        <div className="mono-xs text-paper-faint">PEER</div>
+        <div className="mono-xs text-paper-faint tabular text-right">CAPACITY</div>
+        <div className="mono-xs text-paper-faint tabular text-right hidden md:block">
+          BLOCK
+        </div>
+      </div>
+      <div>
+        {items.map((it) => (
+          <TxRow key={`${it.kind}-${it.channelId}`} item={it} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TxRow({ item }: { item: FeedItem }) {
+  const meta = kindMeta(item.kind);
+  const when = formatRelative(item.time);
+  return (
+    <a
+      href={`${EXPLORER}/lightning/channel/${item.channelId}`}
+      target="_blank"
+      rel="noreferrer"
+      className="group grid grid-cols-[auto_1fr_auto] md:grid-cols-[auto_auto_1fr_auto_auto] items-center gap-x-4 md:gap-x-5 px-4 md:px-5 py-[9px] rule-b hover:bg-[#ffffff05] transition-colors"
+    >
+      {/* WHEN */}
+      <div className="min-w-0">
+        <div className="mono text-[11px] text-paper tabular">
+          {item.approx && (
+            <span className="text-paper-faint/60 mr-0.5">~</span>
+          )}
+          {when}
+        </div>
+        <div className="mono-xs text-paper-faint tabular">
+          {formatClock(item.time)}
+        </div>
+      </div>
+
+      {/* TYPE BADGE (desktop only column; mobile shows it merged above peer) */}
+      <div className="hidden md:flex items-center">
+        <span
+          className="inline-flex items-center gap-1.5 mono-xs tracking-wide px-2 py-[3px] rounded-[2px]"
+          style={{
+            color: meta.fg,
+            background: meta.bg,
+            borderLeft: `2px solid ${meta.fg}`,
+          }}
+        >
+          <span aria-hidden>{meta.glyph}</span>
+          {meta.label}
+        </span>
+      </div>
+
+      {/* PEER */}
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="md:hidden mono-xs" style={{ color: meta.fg }}>
+            {meta.glyph}
+          </span>
+          <Link
+            href={`/nodes/${item.peer.public_key}`}
+            className="ui text-[13px] text-paper truncate group-hover:text-amber transition-colors"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {item.peer.alias || "—"}
+          </Link>
+        </div>
+        <div className="mono-xs text-paper-faint tabular truncate">
+          {shortKey(item.peer.public_key)}
+        </div>
+      </div>
+
+      {/* CAPACITY */}
+      <div className="text-right shrink-0">
+        <div className="mono tabular text-paper text-[12px]">
+          ₿ {formatSats(item.capacity)}
+        </div>
+        <div className="mono-xs text-paper-faint tabular">
+          {compactNumber(item.capacity)} sats
+        </div>
+      </div>
+
+      {/* BLOCK */}
+      <div className="hidden md:block text-right shrink-0">
+        <div className="mono-xs tabular text-paper-dim">
+          #{formatNumber(item.block)}
+        </div>
+        <div className="mono-xs text-paper-faint/60 tabular group-hover:text-amber">
+          ↗
+        </div>
+      </div>
+    </a>
+  );
+}
+
+function kindMeta(kind: FeedKind): {
+  label: string;
+  glyph: string;
+  fg: string;
+  bg: string;
+} {
+  switch (kind) {
+    case "OPEN":
+      return {
+        label: "OPEN",
+        glyph: "↗",
+        fg: "var(--good, #6ad27a)",
+        bg: "rgba(106,210,122,0.08)",
+      };
+    case "COOP_CLOSE":
+      return {
+        label: "COOP CLOSE",
+        glyph: "↘",
+        fg: "var(--paper-dim, #b9b2a2)",
+        bg: "rgba(255,255,255,0.04)",
+      };
+    case "FORCE_CLOSE":
+      return {
+        label: "FORCE CLOSE",
+        glyph: "⚠",
+        fg: "var(--amber, #ff8a3d)",
+        bg: "rgba(255,138,61,0.08)",
+      };
+    case "BREACH_CLOSE":
+      return {
+        label: "BREACH",
+        glyph: "✕",
+        fg: "var(--bad, #ff6464)",
+        bg: "rgba(255,100,100,0.1)",
+      };
+  }
+}
+
+function formatRelative(unix: number): string {
+  if (!unix) return "—";
+  const diff = Math.floor(Date.now() / 1000) - unix;
+  if (diff < 60) return "just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  const days = Math.floor(diff / 86400);
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months}mo ago`;
+  return `${Math.floor(days / 365)}y ago`;
+}
+
+function formatClock(unix: number): string {
+  if (!unix) return "";
+  const d = new Date(unix * 1000);
+  const date = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const time = d.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  return `${date} · ${time}`;
 }

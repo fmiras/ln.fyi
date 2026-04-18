@@ -110,6 +110,22 @@ export type NodeStatsPoint = {
   channels: number;
 };
 
+export type ChannelListItem = {
+  status: number; // 1 = open, 2 = closed
+  closing_reason: number | null; // 1 coop · 2 force-local · 3 force-remote · 4 breach · null unknown
+  closing_date: number | null;
+  capacity: number;
+  short_id: string; // "<blockHeight>x<txIndex>x<vout>"
+  id: string;
+  fee_rate: number;
+  node: {
+    alias: string;
+    public_key: string;
+    channels: number;
+    capacity: string | number;
+  };
+};
+
 async function j<T>(path: string, revalidate = 300): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     next: { revalidate },
@@ -117,6 +133,23 @@ async function j<T>(path: string, revalidate = 300): Promise<T> {
   });
   if (!res.ok) throw new Error(`${path} ${res.status}`);
   return res.json() as Promise<T>;
+}
+
+// mempool.space's core chain endpoints live at /api (not /api/v1). BASE already
+// includes /api/v1, so we strip the suffix to hit the chain namespace.
+async function jRoot<T>(path: string, revalidate = 300): Promise<T> {
+  const root = BASE.replace(/\/v1$/, "");
+  const res = await fetch(`${root}${path}`, {
+    next: { revalidate },
+    headers: { Accept: "application/json" },
+  });
+  if (!res.ok) throw new Error(`${path} ${res.status}`);
+  const text = await res.text();
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return text as unknown as T;
+  }
 }
 
 export const api = {
@@ -149,6 +182,19 @@ export const api = {
   node: (pubKey: string) => j<NodeDetail>(`/lightning/nodes/${pubKey}`, 600),
   nodeStats: (pubKey: string) =>
     j<NodeStatsPoint[]>(`/lightning/nodes/${pubKey}/statistics`, 600),
+  nodeChannels: (
+    pubKey: string,
+    status: "open" | "closed",
+    index = 0,
+  ): Promise<ChannelListItem[]> =>
+    j<ChannelListItem[]>(
+      `/lightning/channels?public_key=${pubKey}&status=${status}&index=${index}`,
+      300,
+    ),
+  tipHeight: async (): Promise<number> => {
+    const v = await jRoot<number | string>("/blocks/tip/height", 60);
+    return typeof v === "number" ? v : parseInt(v, 10);
+  },
 };
 
 // Formatting helpers — all data uses tabular-nums + mono.
