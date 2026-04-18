@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="ln.fyi">
+  <title>ln.fyi — Lightning Network atlas</title>
+  <rect width="24" height="24" rx="5" fill="#0a0907"/>
+  <path
+    d="M13.2 4.2 L5.8 13 L11.4 13 L10.8 19.8 L18.2 11 L12.6 11 Z"
+    fill="#ff8a3d"
+    stroke="#ff8a3d"
+    stroke-width="0.8"
+    stroke-linejoin="round"
+    stroke-linecap="round"
+  />
+</svg>
