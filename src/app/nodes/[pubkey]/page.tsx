@@ -10,7 +10,9 @@ import {
   compactNumber,
   shortKey,
   type ChannelListItem,
+  type NodeDetail,
 } from "@/lib/api";
+import { nodePageDecision } from "@/lib/upstream";
 import { AreaChart } from "@/components/chart";
 import { Panel } from "@/components/panel";
 import { ambossNode } from "@/lib/amboss";
@@ -26,24 +28,29 @@ import {
 // One day. Every fetch in this page is at least this long — Next uses the
 // shortest revalidate on the route, so a 60s or 300s fetch would undo this.
 export const revalidate = 86400;
-// Allow any pubkey at runtime — we pre-render the top-ranked set but fall
-// back to on-demand ISR for everyone else.
+// Paths that were not rendered at build time are generated on first request,
+// then cached. false would 404 every pubkey, since we prerender none.
 export const dynamicParams = true;
 
-// Pre-render the union of top-ranked nodes so the HTML is ready for Googlebot's
-// first crawl. Remaining nodes render on-demand and are then cached by ISR.
-export async function generateStaticParams() {
-  const [liq, conn, old] = await Promise.all([
-    safe(api.topByCapacity()),
-    safe(api.topByConnectivity()),
-    safe(api.oldest()),
-  ]);
-  const keys = new Set<string>();
-  for (const list of [liq, conn, old]) {
-    if (!list) continue;
-    for (const n of list) if (n.publicKey) keys.add(n.publicKey);
+// Prerender nothing. Returning the top-ranked set used to bake a not-found
+// page whenever the mirror blipped during `next build`, and that 404 then
+// lived for the full revalidate window. An empty array keeps the route on
+// ISR (a missing return would make it dynamic) and lets every pubkey,
+// including ones that failed this build, render on demand.
+export function generateStaticParams() {
+  return [];
+}
+
+// Invalid pubkeys and a real upstream 404 are missing nodes. A failed fetch
+// is rethrown so Next does not store a 404.
+async function loadNode(pubkey: string): Promise<NodeDetail> {
+  if (nodePageDecision(pubkey) === "not-found") notFound();
+  try {
+    return await api.node(pubkey);
+  } catch (err) {
+    if (nodePageDecision(pubkey, err) === "not-found") notFound();
+    throw err;
   }
-  return Array.from(keys).map((pubkey) => ({ pubkey }));
 }
 
 export async function generateMetadata({
@@ -52,15 +59,7 @@ export async function generateMetadata({
   params: Promise<{ pubkey: string }>;
 }): Promise<Metadata> {
   const { pubkey } = await params;
-  const node = await safe(api.node(pubkey));
-  if (!node) {
-    return buildMetadata({
-      title: "Lightning node",
-      description: "Lightning Network node profile on ln.fyi.",
-      path: `/nodes/${pubkey}`,
-      noindex: true,
-    });
-  }
+  const node = await loadNode(pubkey);
   const alias = (node.alias || "Anonymous").trim();
   const country =
     node.country && typeof node.country === "object"
@@ -107,7 +106,7 @@ export default async function NodePage({
     closedC,
     amboss,
   ] = await Promise.all([
-    safe(api.node(pubkey)),
+    loadNode(pubkey),
     safe(api.nodeStats(pubkey)),
     safe(api.tipHeight()),
     safe(api.nodeChannels(pubkey, "open", 0)),
@@ -118,8 +117,6 @@ export default async function NodePage({
     safe(api.nodeChannels(pubkey, "closed", 20)),
     ambossNode(pubkey),
   ]);
-
-  if (!node) return notFound();
 
   const sortedStats = (stats ?? []).slice().sort((a, b) => a.added - b.added);
   const capPoints = sortedStats.map((s) => ({ x: s.added, y: s.capacity / 1e8 }));

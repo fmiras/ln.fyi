@@ -4,6 +4,8 @@
  * All endpoints are public and require no authentication.
  */
 
+import { fetchUpstream, getJson } from "./upstream";
+
 // Uses the emzy mirror — the primary mempool.space instance stopped updating
 // its Lightning statistics endpoints in Jan 2026, while the mirror tracks live.
 const BASE =
@@ -137,24 +139,23 @@ export type ChannelListItem = {
 
 // Daily unless a caller passes a shorter window. A smaller number also
 // shortens ISR for every route that hits this fetch — Next uses the minimum.
+// 404 becomes MissingResourceError. Network errors, 429s, and 5xx are retried,
+// then thrown as UpstreamError so callers can avoid caching a fake 404.
 async function j<T>(path: string, revalidate = 86400): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
+  return getJson<T>(`${BASE}${path}`, {
     next: { revalidate },
     headers: { Accept: "application/json" },
   });
-  if (!res.ok) throw new Error(`${path} ${res.status}`);
-  return res.json() as Promise<T>;
 }
 
 // mempool.space's core chain endpoints live at /api (not /api/v1). BASE already
 // includes /api/v1, so we strip the suffix to hit the chain namespace.
 async function jRoot<T>(path: string, revalidate = 86400): Promise<T> {
   const root = BASE.replace(/\/v1$/, "");
-  const res = await fetch(`${root}${path}`, {
+  const res = await fetchUpstream(`${root}${path}`, {
     next: { revalidate },
     headers: { Accept: "application/json" },
   });
-  if (!res.ok) throw new Error(`${path} ${res.status}`);
   const text = await res.text();
   try {
     return JSON.parse(text) as T;
@@ -290,7 +291,9 @@ export function pctChange(current: number, prior: number): number {
   return ((current - prior) / prior) * 100;
 }
 
-// Fallback fetcher that tolerates upstream outages — returns null on failure
+// Swallows every failure, including a real 404. Don't use this for the node
+// profile existence check — a null there is rendered with notFound() and the
+// 404 is cached for the whole revalidate window.
 export async function safe<T>(p: Promise<T>): Promise<T | null> {
   try {
     return await p;

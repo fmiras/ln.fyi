@@ -72,7 +72,12 @@ src/
 All data fetches are server-side with Next.js cache revalidation.
 The network overview stays on a short window (about 2–10 minutes). Node
 profile pages, their Open Graph images, and the mempool fetches they make
-revalidate once a day. There is no client-side polling.
+revalidate once a day. Profiles are generated on first request rather than
+at build time, so a mirror outage cannot be frozen in as a not-found page.
+A profile is cached as missing only when the pubkey is impossible or the
+upstream API returns 404; network errors, rate limits, and 5xx responses
+are retried and then thrown so the last good page stays up. There is no
+client-side polling.
 
 ## Contributing
 
