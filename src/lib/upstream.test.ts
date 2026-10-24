@@ -95,6 +95,37 @@ describe("getJson", () => {
     assert.equal(calls.length, 1);
   });
 
+  it("retries a hung connection after the attempt times out", async () => {
+    let calls = 0;
+    const fetchImpl: typeof fetch = (_input, init) => {
+      calls += 1;
+      if (calls < 3) {
+        return new Promise((_resolve, reject) => {
+          const signal = init?.signal;
+          if (!signal) {
+            reject(new Error("expected a timeout signal"));
+            return;
+          }
+          if (signal.aborted) {
+            reject(signal.reason ?? new Error("aborted"));
+            return;
+          }
+          signal.addEventListener("abort", () => {
+            reject(signal.reason ?? new Error("aborted"));
+          });
+        });
+      }
+      return Promise.resolve(jsonResponse(200, { alias: "recovered" }));
+    };
+    const data = await getJson<{ alias: string }>(
+      "https://example.test/node",
+      {},
+      { fetchImpl, delaysMs: [0, 0], attempts: 3, timeoutMs: 30 },
+    );
+    assert.equal(data.alias, "recovered");
+    assert.equal(calls, 3);
+  });
+
   it("treats a 200 with a non-JSON body as an upstream failure", async () => {
     const { fetchImpl } = scripted([new Response("<html>bad gateway</html>", { status: 200 })]);
     await assert.rejects(

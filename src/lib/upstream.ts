@@ -55,11 +55,15 @@ export function nodePageDecision(
 export type FetchUpstreamOptions = {
   attempts?: number;
   delaysMs?: number[];
+  timeoutMs?: number;
   fetchImpl?: typeof fetch;
 };
 
 const DEFAULT_ATTEMPTS = 3;
 const DEFAULT_DELAYS_MS = [200, 500];
+// A dropped TLS connection to the mirror can hang instead of rejecting.
+// Bound each attempt so three tries still finish well inside the function limit.
+const DEFAULT_TIMEOUT_MS = 10_000;
 
 function sleep(ms: number): Promise<void> {
   if (ms <= 0) return Promise.resolve();
@@ -73,14 +77,17 @@ export async function fetchUpstream(
 ): Promise<Response> {
   const attempts = options?.attempts ?? DEFAULT_ATTEMPTS;
   const delaysMs = options?.delaysMs ?? DEFAULT_DELAYS_MS;
+  const timeoutMs = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const doFetch = options?.fetchImpl ?? fetch;
   let last: UpstreamError | undefined;
 
   for (let attempt = 0; attempt < attempts; attempt++) {
     if (attempt > 0) await sleep(delaysMs[attempt - 1] ?? delaysMs.at(-1) ?? 0);
     let res: Response;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      res = await doFetch(url, init);
+      res = await doFetch(url, { ...init, signal: controller.signal });
     } catch (err) {
       const wrapped = new UpstreamError(
         `upstream request failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -89,6 +96,8 @@ export async function fetchUpstream(
       console.warn(`upstream retry ${attempt + 1}/${attempts - 1}: ${wrapped.message}`);
       last = wrapped;
       continue;
+    } finally {
+      clearTimeout(timer);
     }
 
     if (res.ok) return res;
