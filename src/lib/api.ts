@@ -4,6 +4,14 @@
  * All endpoints are public and require no authentication.
  */
 
+import {
+  MissingResourceError,
+  fetchUpstream,
+  getJson,
+  isMempoolNodeMiss,
+  nodeDetailFailureOutcome,
+} from "./upstream";
+
 // Uses the emzy mirror — the primary mempool.space instance stopped updating
 // its Lightning statistics endpoints in Jan 2026, while the mirror tracks live.
 const BASE =
@@ -135,24 +143,25 @@ export type ChannelListItem = {
   };
 };
 
-async function j<T>(path: string, revalidate = 300): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
+// Daily unless a caller passes a shorter window. A smaller number also
+// shortens ISR for every route that hits this fetch — Next uses the minimum.
+// 404 becomes MissingResourceError. Network errors, 429s, and 5xx are retried,
+// then thrown as UpstreamError so callers can avoid caching a fake 404.
+async function j<T>(path: string, revalidate = 86400): Promise<T> {
+  return getJson<T>(`${BASE}${path}`, {
     next: { revalidate },
     headers: { Accept: "application/json" },
   });
-  if (!res.ok) throw new Error(`${path} ${res.status}`);
-  return res.json() as Promise<T>;
 }
 
 // mempool.space's core chain endpoints live at /api (not /api/v1). BASE already
 // includes /api/v1, so we strip the suffix to hit the chain namespace.
-async function jRoot<T>(path: string, revalidate = 300): Promise<T> {
+async function jRoot<T>(path: string, revalidate = 86400): Promise<T> {
   const root = BASE.replace(/\/v1$/, "");
-  const res = await fetch(`${root}${path}`, {
+  const res = await fetchUpstream(`${root}${path}`, {
     next: { revalidate },
     headers: { Accept: "application/json" },
   });
-  if (!res.ok) throw new Error(`${path} ${res.status}`);
   const text = await res.text();
   try {
     return JSON.parse(text) as T;
@@ -210,9 +219,39 @@ export const api = {
       }),
     );
   },
-  node: (pubKey: string) => j<NodeDetail>(`/lightning/nodes/${pubKey}`, 600),
+  // Per-node payloads. These must stay at a day: a shorter fetch revalidate
+  // lowers /nodes/[pubkey] to that interval and turns repeat crawler hits
+  // into background regenerations. Country and ISP pages share `node`.
+  // Mempool answers a missing node with 500 {"error":"Failed to get node"},
+  // and uses that same body when the query throws. Confirm with search
+  // before calling it missing; a failed or contradictory search is rethrown.
+  node: async (pubKey: string): Promise<NodeDetail> => {
+    const path = `/lightning/nodes/${pubKey}`;
+    try {
+      return await j<NodeDetail>(path, 86400);
+    } catch (err) {
+      if (!isMempoolNodeMiss(err)) throw err;
+      let search: "missing" | "present" | "failed" = "failed";
+      try {
+        const rows = await j<Array<{ public_key?: string }>>(
+          `/lightning/nodes/search/${encodeURIComponent(pubKey)}`,
+          86400,
+        );
+        const known = rows.some(
+          (row) => row.public_key?.toLowerCase() === pubKey.toLowerCase(),
+        );
+        search = known ? "present" : "missing";
+      } catch {
+        search = "failed";
+      }
+      if (nodeDetailFailureOutcome(err, search) === "missing") {
+        throw new MissingResourceError(`${BASE}${path}`);
+      }
+      throw err;
+    }
+  },
   nodeStats: (pubKey: string) =>
-    j<NodeStatsPoint[]>(`/lightning/nodes/${pubKey}/statistics`, 600),
+    j<NodeStatsPoint[]>(`/lightning/nodes/${pubKey}/statistics`, 86400),
   nodeChannels: (
     pubKey: string,
     status: "open" | "closed",
@@ -220,10 +259,10 @@ export const api = {
   ): Promise<ChannelListItem[]> =>
     j<ChannelListItem[]>(
       `/lightning/channels?public_key=${pubKey}&status=${status}&index=${index}`,
-      300,
+      86400,
     ),
   tipHeight: async (): Promise<number> => {
-    const v = await jRoot<number | string>("/blocks/tip/height", 60);
+    const v = await jRoot<number | string>("/blocks/tip/height", 86400);
     return typeof v === "number" ? v : parseInt(v, 10);
   },
 };
@@ -285,7 +324,9 @@ export function pctChange(current: number, prior: number): number {
   return ((current - prior) / prior) * 100;
 }
 
-// Fallback fetcher that tolerates upstream outages — returns null on failure
+// Swallows every failure, including a real 404. Don't use this for the node
+// profile existence check — a null there is rendered with notFound() and the
+// 404 is cached for the whole revalidate window.
 export async function safe<T>(p: Promise<T>): Promise<T | null> {
   try {
     return await p;

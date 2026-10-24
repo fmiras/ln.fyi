@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { IBM_Plex_Sans, IBM_Plex_Mono, IBM_Plex_Sans_Condensed } from "next/font/google";
 import "./globals.css";
 import { Shell } from "@/components/shell";
@@ -77,6 +78,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <body className="min-h-screen">
         <Shell>{children}</Shell>
+        <Analytics />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={jsonLdScript([
