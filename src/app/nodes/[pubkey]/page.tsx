@@ -23,7 +23,9 @@ import {
   slugifyIsp,
 } from "@/lib/seo";
 
-export const revalidate = 300;
+// One day. Every fetch in this page is at least this long — Next uses the
+// shortest revalidate on the route, so a 60s or 300s fetch would undo this.
+export const revalidate = 86400;
 // Allow any pubkey at runtime — we pre-render the top-ranked set but fall
 // back to on-demand ISR for everyone else.
 export const dynamicParams = true;

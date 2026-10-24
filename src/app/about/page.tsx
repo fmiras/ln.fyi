@@ -5,7 +5,7 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata = buildMetadata({
   title: "About",
   description:
-    "ln.fyi is an open, real-time editorial dashboard for the Bitcoin Lightning Network. Data from mempool.space. No accounts, no tracking, public domain.",
+    "ln.fyi is an open editorial dashboard for the Bitcoin Lightning Network. Data from mempool.space. No accounts. Anonymous page views via Vercel Analytics. Public domain.",
   path: "/about",
 });
 
@@ -23,7 +23,7 @@ export default function About() {
           </h1>
           <p className="ui text-[12px] md:text-[15px] text-paper-dim mt-3 md:mt-5 max-w-xl">
             A real-time, editorial dashboard for the Bitcoin Lightning Network.
-            Free, open, no accounts, no tracking.
+            Free, open, no accounts. Anonymous page views only.
           </p>
         </div>
         <div className="mono-xs text-paper-faint tabular md:pb-2 md:text-right md:text-[12px]">
@@ -62,7 +62,8 @@ export default function About() {
                 </p>
                 <p className="ui text-[14px] md:text-[14px] leading-[1.65] text-paper-dim md:break-inside-avoid">
                   It is intentionally minimal: one screen, real numbers, no ads,
-                  no tracking, no upsell. Every chart and table here is
+                  no upsell. Page views are counted anonymously with Vercel
+                  Analytics, without cookies. Every chart and table here is
                   rebuildable from the same public endpoints — the code is open.
                 </p>
               </div>
@@ -78,9 +79,9 @@ export default function About() {
               <FactRow label="SOFTWARE" value="mempool.space" />
               <FactRow label="ENDPOINTS" value="Lightning REST v1" />
               <FactRow label="AUTH" value="None" />
-              <FactRow label="REFRESH" value="≈5 min (cached)" />
+              <FactRow label="REFRESH" value="5 min overview · daily nodes" />
               <FactRow label="COST" value="Free · forever" />
-              <FactRow label="TRACKING" value="None" />
+              <FactRow label="PAGE VIEWS" value="Vercel Analytics · no cookies" />
               <FactRow label="LICENSE" value="Public domain" />
             </div>
           </Panel>

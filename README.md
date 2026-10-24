@@ -3,7 +3,8 @@
 **An editorial atlas of the Bitcoin Lightning Network.**
 
 A live, open dashboard tracking capacity, nodes, channels and onchain activity
-across Lightning. No accounts, no tracking, no API keys.
+across Lightning. No accounts, no API keys. Anonymous page-view counts
+via Vercel Analytics.
 
 Live at **[ln.fyi](https://ln.fyi)**.
 
@@ -68,8 +69,10 @@ src/
     api.ts                # mempool Lightning API client + formatters
 ```
 
-All data fetches are server-side with Next.js cache revalidation
-(typically 120–600s). There is no client-side polling.
+All data fetches are server-side with Next.js cache revalidation.
+The network overview stays on a short window (about 2–10 minutes). Node
+profile pages, their Open Graph images, and the mempool fetches they make
+revalidate once a day. There is no client-side polling.
 
 ## Contributing
 

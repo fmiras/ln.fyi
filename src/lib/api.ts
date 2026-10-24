@@ -135,7 +135,9 @@ export type ChannelListItem = {
   };
 };
 
-async function j<T>(path: string, revalidate = 300): Promise<T> {
+// Daily unless a caller passes a shorter window. A smaller number also
+// shortens ISR for every route that hits this fetch — Next uses the minimum.
+async function j<T>(path: string, revalidate = 86400): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     next: { revalidate },
     headers: { Accept: "application/json" },
@@ -146,7 +148,7 @@ async function j<T>(path: string, revalidate = 300): Promise<T> {
 
 // mempool.space's core chain endpoints live at /api (not /api/v1). BASE already
 // includes /api/v1, so we strip the suffix to hit the chain namespace.
-async function jRoot<T>(path: string, revalidate = 300): Promise<T> {
+async function jRoot<T>(path: string, revalidate = 86400): Promise<T> {
   const root = BASE.replace(/\/v1$/, "");
   const res = await fetch(`${root}${path}`, {
     next: { revalidate },
@@ -210,9 +212,12 @@ export const api = {
       }),
     );
   },
-  node: (pubKey: string) => j<NodeDetail>(`/lightning/nodes/${pubKey}`, 600),
+  // Per-node payloads. These must stay at a day: a shorter fetch revalidate
+  // lowers /nodes/[pubkey] to that interval and turns repeat crawler hits
+  // into background regenerations. Country and ISP pages share `node`.
+  node: (pubKey: string) => j<NodeDetail>(`/lightning/nodes/${pubKey}`, 86400),
   nodeStats: (pubKey: string) =>
-    j<NodeStatsPoint[]>(`/lightning/nodes/${pubKey}/statistics`, 600),
+    j<NodeStatsPoint[]>(`/lightning/nodes/${pubKey}/statistics`, 86400),
   nodeChannels: (
     pubKey: string,
     status: "open" | "closed",
@@ -220,10 +225,10 @@ export const api = {
   ): Promise<ChannelListItem[]> =>
     j<ChannelListItem[]>(
       `/lightning/channels?public_key=${pubKey}&status=${status}&index=${index}`,
-      300,
+      86400,
     ),
   tipHeight: async (): Promise<number> => {
-    const v = await jRoot<number | string>("/blocks/tip/height", 60);
+    const v = await jRoot<number | string>("/blocks/tip/height", 86400);
     return typeof v === "number" ? v : parseInt(v, 10);
   },
 };
