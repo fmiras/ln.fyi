@@ -4,7 +4,9 @@ import {
   MissingResourceError,
   UpstreamError,
   getJson,
+  isMempoolNodeMiss,
   isMissingResource,
+  nodeDetailFailureOutcome,
   nodePageDecision,
 } from "./upstream.ts";
 
@@ -126,6 +128,14 @@ describe("getJson", () => {
     assert.equal(calls, 3);
   });
 
+  it("keeps a 500 body so a mempool node miss can be recognized", async () => {
+    const { fetchImpl } = scripted([jsonResponse(500, { error: "Failed to get node" })]);
+    await assert.rejects(
+      () => getJson("https://example.test/node", {}, { fetchImpl, delaysMs: [0, 0], attempts: 1 }),
+      (err: unknown) => isMempoolNodeMiss(err),
+    );
+  });
+
   it("treats a 200 with a non-JSON body as an upstream failure", async () => {
     const { fetchImpl } = scripted([new Response("<html>bad gateway</html>", { status: 200 })]);
     await assert.rejects(
@@ -134,6 +144,32 @@ describe("getJson", () => {
         err instanceof UpstreamError &&
         !isMissingResource(err) &&
         (err as UpstreamError).message.includes("non-JSON"),
+    );
+  });
+});
+
+describe("nodeDetailFailureOutcome", () => {
+  const miss = new UpstreamError(
+    "upstream 500: https://example.test/node",
+    500,
+    JSON.stringify({ error: "Failed to get node" }),
+  );
+  const outage = new UpstreamError("upstream 503", 503, "<html>");
+
+  it("reads a mempool node miss from the 500 body", () => {
+    assert.equal(isMempoolNodeMiss(miss), true);
+    assert.equal(isMempoolNodeMiss(outage), false);
+    assert.equal(isMempoolNodeMiss(new UpstreamError("upstream 500", 500, "nope")), false);
+  });
+
+  it("404s only when search agrees the 500 is a missing node", () => {
+    assert.equal(nodeDetailFailureOutcome(miss, "missing"), "missing");
+    assert.equal(nodeDetailFailureOutcome(miss, "present"), "throw");
+    assert.equal(nodeDetailFailureOutcome(miss, "failed"), "throw");
+    assert.equal(nodeDetailFailureOutcome(outage, "missing"), "throw");
+    assert.equal(
+      nodeDetailFailureOutcome(new MissingResourceError("https://example.test/missing"), "failed"),
+      "missing",
     );
   });
 });

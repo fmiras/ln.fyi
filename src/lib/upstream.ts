@@ -17,10 +17,12 @@ export class MissingResourceError extends Error {
 
 export class UpstreamError extends Error {
   readonly status?: number;
-  constructor(message: string, status?: number) {
+  readonly body?: string;
+  constructor(message: string, status?: number, body?: string) {
     super(message);
     this.name = "UpstreamError";
     this.status = status;
+    this.body = body;
   }
 }
 
@@ -31,6 +33,30 @@ export function isMissingResource(err: unknown): boolean {
       err !== null &&
       (err as { name?: string }).name === "MissingResourceError")
   );
+}
+
+/** Mempool's node route uses this 500 for a missing row and for a query error. */
+export function isMempoolNodeMiss(err: unknown): boolean {
+  if (!(err instanceof UpstreamError) || err.status !== 500 || !err.body) return false;
+  try {
+    const parsed = JSON.parse(err.body) as { error?: unknown };
+    return parsed.error === "Failed to get node";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * A 500 "Failed to get node" is a real miss only when search agrees the
+ * pubkey is absent. If search fails or still finds the node, throw.
+ */
+export function nodeDetailFailureOutcome(
+  err: unknown,
+  search: "missing" | "present" | "failed",
+): "missing" | "throw" {
+  if (isMissingResource(err)) return "missing";
+  if (isMempoolNodeMiss(err) && search === "missing") return "missing";
+  return "throw";
 }
 
 /** Compressed Lightning pubkey: 33 bytes, hex. Anything else cannot be a node. */
@@ -101,11 +127,11 @@ export async function fetchUpstream(
     }
 
     if (res.ok) return res;
-    await res.body?.cancel().catch(() => undefined);
+    const body = (await res.text().catch(() => "")).slice(0, 500);
 
     if (res.status === 404) throw new MissingResourceError(url);
 
-    const failed = new UpstreamError(`upstream ${res.status}: ${url}`, res.status);
+    const failed = new UpstreamError(`upstream ${res.status}: ${url}`, res.status, body);
     const retry = RETRYABLE_STATUSES.has(res.status) && attempt < attempts - 1;
     if (!retry) throw failed;
     console.warn(`upstream retry ${attempt + 1}/${attempts - 1}: ${failed.message}`);

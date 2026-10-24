@@ -4,7 +4,13 @@
  * All endpoints are public and require no authentication.
  */
 
-import { fetchUpstream, getJson } from "./upstream";
+import {
+  MissingResourceError,
+  fetchUpstream,
+  getJson,
+  isMempoolNodeMiss,
+  nodeDetailFailureOutcome,
+} from "./upstream";
 
 // Uses the emzy mirror — the primary mempool.space instance stopped updating
 // its Lightning statistics endpoints in Jan 2026, while the mirror tracks live.
@@ -216,7 +222,34 @@ export const api = {
   // Per-node payloads. These must stay at a day: a shorter fetch revalidate
   // lowers /nodes/[pubkey] to that interval and turns repeat crawler hits
   // into background regenerations. Country and ISP pages share `node`.
-  node: (pubKey: string) => j<NodeDetail>(`/lightning/nodes/${pubKey}`, 86400),
+  // Mempool answers a missing node with 500 {"error":"Failed to get node"},
+  // and uses that same body when the query throws. Confirm with search
+  // before calling it missing; a failed or contradictory search is rethrown.
+  node: async (pubKey: string): Promise<NodeDetail> => {
+    const path = `/lightning/nodes/${pubKey}`;
+    try {
+      return await j<NodeDetail>(path, 86400);
+    } catch (err) {
+      if (!isMempoolNodeMiss(err)) throw err;
+      let search: "missing" | "present" | "failed" = "failed";
+      try {
+        const rows = await j<Array<{ public_key?: string }>>(
+          `/lightning/nodes/search/${encodeURIComponent(pubKey)}`,
+          86400,
+        );
+        const known = rows.some(
+          (row) => row.public_key?.toLowerCase() === pubKey.toLowerCase(),
+        );
+        search = known ? "present" : "missing";
+      } catch {
+        search = "failed";
+      }
+      if (nodeDetailFailureOutcome(err, search) === "missing") {
+        throw new MissingResourceError(`${BASE}${path}`);
+      }
+      throw err;
+    }
+  },
   nodeStats: (pubKey: string) =>
     j<NodeStatsPoint[]>(`/lightning/nodes/${pubKey}/statistics`, 86400),
   nodeChannels: (
