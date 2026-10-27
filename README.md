@@ -27,10 +27,10 @@ Live at **[ln.fyi](https://ln.fyi)**.
 - IBM Plex Sans / Sans Condensed / Mono
 - Data: [mempool.space Lightning REST API](https://mempool.space/docs/api/rest)
 
-> The site currently reads from the **emzy.de mempool mirror** — the primary
-> mempool.space instance stopped updating its Lightning statistics endpoints
-> in January 2026. Override with `NEXT_PUBLIC_MEMPOOL_BASE` if you run your
-> own mirror.
+> Lightning data comes from the **emzy.de mempool mirror** first. The public
+> mempool.space instance still answers, but its Lightning snapshots lag by
+> days, so it is only used when emzy stalls or returns 429. Set
+> `MEMPOOL_PROVIDERS` to change the order.
 
 ## Running locally
 
@@ -53,7 +53,8 @@ Open <http://localhost:3000>.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `NEXT_PUBLIC_MEMPOOL_BASE` | `https://mempool.emzy.de/api/v1` | Base URL for the mempool Lightning API |
+| `MEMPOOL_PROVIDERS` | emzy, then mempool.space | Comma-separated Lightning API bases, tried in order |
+| `NEXT_PUBLIC_MEMPOOL_BASE` | unset | Legacy single base. A public instance stays primary and the other public instance is kept as backup. A custom URL is used alone. |
 
 ## Project layout
 
@@ -71,15 +72,20 @@ src/
 
 All data fetches are server-side with Next.js cache revalidation.
 The network overview stays on a short window (about 2–10 minutes). Node
-profile pages, their Open Graph images, and the mempool fetches they make
-revalidate once a day. Profiles are generated on first request rather than
-at build time, so a mirror outage cannot be frozen in as a not-found page.
+profile pages and their Open Graph images revalidate once a day when the
+primary directory answers. Each upstream call has a 4 second budget and
+fails over to the next provider after about 2 seconds, so a hung host cannot
+hold the render. The node document is loaded once per request and shared
+with `generateMetadata`. The top 20 nodes by capacity are prerendered.
+
 A profile is cached as missing only when the pubkey is impossible, the
 upstream API returns 404, or mempool's node route answers
-`500 {"error":"Failed to get node"}` and node search agrees the key is
-absent. Network errors, rate limits, other 5xx responses, and a node-route
-500 that search cannot confirm are retried and then thrown so the last good
-page stays up. There is no client-side polling.
+`500 {"error":"Failed to get node"}` and node search on that host agrees the
+key is absent. If the primary is down and a previous good profile exists, that
+page stays up. A pubkey that has never been cached renders a short-lived
+unavailable page (about a minute) instead of a 500. Backup-provider data is
+kept for about 10 minutes so the primary is tried again soon. There is no
+client-side polling.
 
 ## Contributing
 

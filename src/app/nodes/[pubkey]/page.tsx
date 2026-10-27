@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, unstable_rethrow } from "next/navigation";
 import {
   api,
   safe,
@@ -10,12 +10,14 @@ import {
   compactNumber,
   shortKey,
   type ChannelListItem,
-  type NodeDetail,
 } from "@/lib/api";
-import { nodePageDecision } from "@/lib/upstream";
 import { AreaChart } from "@/components/chart";
 import { Panel } from "@/components/panel";
-import { ambossNode } from "@/lib/amboss";
+import {
+  capRouteRevalidate,
+  loadNodeProfile,
+  type NodeProfile,
+} from "@/lib/node-profile";
 import {
   SITE_NAME,
   breadcrumbJsonLd,
@@ -27,30 +29,41 @@ import {
 
 // One day. Every fetch in this page is at least this long — Next uses the
 // shortest revalidate on the route, so a 60s or 300s fetch would undo this.
+// Fallback-provider and cold-miss renders lower it on purpose.
 export const revalidate = 86400;
+// Stop a hung upstream from holding a Fluid instance until the 300s default.
+export const maxDuration = 15;
 // Paths that were not rendered at build time are generated on first request,
-// then cached. false would 404 every pubkey, since we prerender none.
+// then cached. false would 404 every pubkey outside the prerendered set.
 export const dynamicParams = true;
 
-// Prerender nothing. Returning the top-ranked set used to bake a not-found
-// page whenever the mirror blipped during `next build`, and that 404 then
-// lived for the full revalidate window. An empty array keeps the route on
-// ISR (a missing return would make it dynamic) and lets every pubkey,
-// including ones that failed this build, render on demand.
-export function generateStaticParams() {
-  return [];
+// A cold directory miss is cached for a minute, not the day-long page TTL.
+const UNAVAILABLE_REVALIDATE_SECONDS = 60;
+// Cheap at build time: one rankings call, then the top pages. A blip no longer
+// becomes a day-long 404; the page renders a one-minute fallback instead.
+const PRERENDER_TOP_NODES = 20;
+
+export async function generateStaticParams() {
+  const top = await safe(api.topByCapacity());
+  if (!top?.length) return [];
+  const seen = new Set<string>();
+  const params: { pubkey: string }[] = [];
+  for (const node of top) {
+    if (!node.publicKey || seen.has(node.publicKey)) continue;
+    seen.add(node.publicKey);
+    params.push({ pubkey: node.publicKey });
+    if (params.length >= PRERENDER_TOP_NODES) break;
+  }
+  return params;
 }
 
-// Invalid pubkeys and a real upstream 404 are missing nodes. A failed fetch
-// is rethrown so Next does not store a 404.
-async function loadNode(pubkey: string): Promise<NodeDetail> {
-  if (nodePageDecision(pubkey) === "not-found") notFound();
-  try {
-    return await api.node(pubkey);
-  } catch (err) {
-    if (nodePageDecision(pubkey, err) === "not-found") notFound();
-    throw err;
-  }
+function unavailableMetadata(pubkey: string): Metadata {
+  return buildMetadata({
+    title: "Lightning node",
+    description: "Lightning Network node profile on ln.fyi. Directory data is temporarily unavailable.",
+    path: `/nodes/${pubkey}`,
+    noindex: true,
+  });
 }
 
 export async function generateMetadata({
@@ -59,7 +72,16 @@ export async function generateMetadata({
   params: Promise<{ pubkey: string }>;
 }): Promise<Metadata> {
   const { pubkey } = await params;
-  const node = await loadNode(pubkey);
+  let profile: NodeProfile;
+  try {
+    profile = await loadNodeProfile(pubkey);
+  } catch (err) {
+    unstable_rethrow(err);
+    await capRouteRevalidate(UNAVAILABLE_REVALIDATE_SECONDS);
+    return unavailableMetadata(pubkey);
+  }
+  if (profile.status !== "ready") return unavailableMetadata(pubkey);
+  const node = profile.node;
   const alias = (node.alias || "Anonymous").trim();
   const country =
     node.country && typeof node.country === "object"
@@ -94,29 +116,22 @@ export default async function NodePage({
 }) {
   const { pubkey } = await params;
 
-  const [
-    node,
-    stats,
-    tipHeight,
-    openA,
-    openB,
-    openC,
-    closedA,
-    closedB,
-    closedC,
-    amboss,
-  ] = await Promise.all([
-    loadNode(pubkey),
-    safe(api.nodeStats(pubkey)),
-    safe(api.tipHeight()),
-    safe(api.nodeChannels(pubkey, "open", 0)),
-    safe(api.nodeChannels(pubkey, "open", 10)),
-    safe(api.nodeChannels(pubkey, "open", 20)),
-    safe(api.nodeChannels(pubkey, "closed", 0)),
-    safe(api.nodeChannels(pubkey, "closed", 10)),
-    safe(api.nodeChannels(pubkey, "closed", 20)),
-    ambossNode(pubkey),
-  ]);
+  let profile: NodeProfile;
+  try {
+    profile = await loadNodeProfile(pubkey);
+  } catch (err) {
+    unstable_rethrow(err);
+    console.warn(
+      "node profile unavailable:",
+      err instanceof Error ? err.message : err,
+    );
+    await capRouteRevalidate(UNAVAILABLE_REVALIDATE_SECONDS);
+    return <NodeUnavailable pubkey={pubkey} />;
+  }
+  if (profile.status === "not-found") notFound();
+
+  const { node, stats, tip: tipHeight, opens: openPage, closes: closedPage, amboss } =
+    profile;
 
   const sortedStats = (stats ?? []).slice().sort((a, b) => a.added - b.added);
   const capPoints = sortedStats.map((s) => ({ x: s.added, y: s.capacity / 1e8 }));
@@ -151,8 +166,8 @@ export default async function NodePage({
   // sliding-window pagination overlaps.
   const now = Math.floor(Date.now() / 1000);
   const tip = tipHeight ?? 0;
-  const opens = dedupeById(concat(openA, openB, openC));
-  const closes = dedupeById(concat(closedA, closedB, closedC));
+  const opens = dedupeById(openPage ?? []);
+  const closes = dedupeById(closedPage ?? []);
 
   const feed: FeedItem[] = [
     ...opens.map((c): FeedItem => {
@@ -211,7 +226,10 @@ export default async function NodePage({
   ];
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-auto md:overflow-hidden">
+    <div
+      className="flex-1 flex flex-col min-h-0 overflow-auto md:overflow-hidden"
+      data-provider={profile.source}
+    >
       {/* Header — compact, single-line on desktop so the dashboard fits in the viewport */}
       <div className="rule-b px-4 md:px-6 lg:px-8 py-3 md:py-4 shrink-0">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-6">
@@ -389,10 +407,6 @@ function closingKind(code: number | null): FeedKind {
   return "COOP_CLOSE";
 }
 
-function concat<T>(...xs: (T[] | null | undefined)[]): T[] {
-  return xs.flatMap((x) => x ?? []);
-}
-
 function dedupeById(xs: ChannelListItem[]): ChannelListItem[] {
   const seen = new Set<string>();
   const out: ChannelListItem[] = [];
@@ -407,6 +421,30 @@ function dedupeById(xs: ChannelListItem[]): ChannelListItem[] {
 /* ------------------------------------------------------------------ */
 /*  Small components                                                    */
 /* ------------------------------------------------------------------ */
+
+function NodeUnavailable({ pubkey }: { pubkey: string }) {
+  return (
+    <div className="flex-1 flex flex-col min-h-0 overflow-auto">
+      <div className="rule-b px-4 md:px-6 lg:px-8 py-8 md:py-12 max-w-3xl">
+        <div className="mono-xs text-amber mb-3">§ NODE PROFILE</div>
+        <h1 className="display text-[28px] md:text-[40px] leading-[0.95] text-paper">
+          TEMPORARILY UNAVAILABLE
+        </h1>
+        <p className="ui text-[15px] text-paper-dim max-w-xl mt-4">
+          The Lightning directory did not answer in time, so this profile was
+          not generated. It will be fetched again shortly.
+        </p>
+        <div className="mono-xs text-paper-faint tabular break-all mt-6">{pubkey}</div>
+        <Link
+          href="/nodes"
+          className="inline-block mt-6 mono-xs text-amber hover:text-paper transition-colors"
+        >
+          ← NODE DIRECTORY
+        </Link>
+      </div>
+    </div>
+  );
+}
 
 function StatCell({
   label,
