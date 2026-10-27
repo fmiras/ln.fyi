@@ -4,18 +4,16 @@
  * All endpoints are public and require no authentication.
  */
 
+import { cache } from "react";
 import {
-  MissingResourceError,
-  fetchUpstream,
-  getJson,
-  isMempoolNodeMiss,
-  nodeDetailFailureOutcome,
+  fetchFromProviders,
+  readJsonBody,
+  resolveNodeDetail,
+  type ProviderFetchOptions,
 } from "./upstream";
 
-// Uses the emzy mirror — the primary mempool.space instance stopped updating
-// its Lightning statistics endpoints in Jan 2026, while the mirror tracks live.
-const BASE =
-  process.env.NEXT_PUBLIC_MEMPOOL_BASE ?? "https://mempool.emzy.de/api/v1";
+// Provider order and failover live in upstream.ts. emzy is the default primary
+// because mempool.space's Lightning snapshots lag by days; space is the backup.
 
 type Interval = "24h" | "3d" | "1w" | "1m" | "3m" | "6m" | "1y" | "2y" | "3y";
 
@@ -145,23 +143,34 @@ export type ChannelListItem = {
 
 // Daily unless a caller passes a shorter window. A smaller number also
 // shortens ISR for every route that hits this fetch — Next uses the minimum.
-// 404 becomes MissingResourceError. Network errors, 429s, and 5xx are retried,
-// then thrown as UpstreamError so callers can avoid caching a fake 404.
-async function j<T>(path: string, revalidate = 86400): Promise<T> {
-  return getJson<T>(`${BASE}${path}`, {
-    next: { revalidate },
-    headers: { Accept: "application/json" },
-  });
+// 404 becomes MissingResourceError. Timeouts, 429s, and 5xx fail over to the
+// next provider inside a few seconds, then throw so a cached page is kept.
+export async function getLightning<T>(
+  path: string,
+  revalidate = 86400,
+  bases?: string[],
+): Promise<T> {
+  const options: ProviderFetchOptions = { revalidate, bases };
+  const res = await fetchFromProviders(
+    path,
+    { next: { revalidate }, headers: { Accept: "application/json" } },
+    options,
+  );
+  return readJsonBody<T>(res, path);
 }
 
-// mempool.space's core chain endpoints live at /api (not /api/v1). BASE already
-// includes /api/v1, so we strip the suffix to hit the chain namespace.
+async function j<T>(path: string, revalidate = 86400): Promise<T> {
+  return getLightning<T>(path, revalidate);
+}
+
+// Chain endpoints live at /api, not /api/v1. fetchFromProviders strips /v1
+// when `root` is set.
 async function jRoot<T>(path: string, revalidate = 86400): Promise<T> {
-  const root = BASE.replace(/\/v1$/, "");
-  const res = await fetchUpstream(`${root}${path}`, {
-    next: { revalidate },
-    headers: { Accept: "application/json" },
-  });
+  const res = await fetchFromProviders(
+    path,
+    { next: { revalidate }, headers: { Accept: "application/json" } },
+    { root: true, revalidate },
+  );
   const text = await res.text();
   try {
     return JSON.parse(text) as T;
@@ -169,6 +178,32 @@ async function jRoot<T>(path: string, revalidate = 86400): Promise<T> {
     return text as unknown as T;
   }
 }
+
+// Tip height is the same on every node page. Share one in-flight read on this
+// instance so a burst of cold renders does not stampede the chain endpoint.
+const TIP_SHARE_MS = 60_000;
+let sharedTip: { value: number; expires: number } | null = null;
+let sharedTipInflight: Promise<number> | null = null;
+
+const readSharedTip = cache(async (): Promise<number> => {
+  const now = Date.now();
+  if (sharedTip && sharedTip.expires > now) return sharedTip.value;
+  if (!sharedTipInflight) {
+    sharedTipInflight = jRoot<number | string>("/blocks/tip/height", 86400)
+      .then((v) => {
+        const height = typeof v === "number" ? v : parseInt(String(v), 10);
+        if (!Number.isFinite(height)) {
+          throw new Error("tip height was not a number");
+        }
+        sharedTip = { value: height, expires: Date.now() + TIP_SHARE_MS };
+        return height;
+      })
+      .finally(() => {
+        sharedTipInflight = null;
+      });
+  }
+  return sharedTipInflight;
+});
 
 export const api = {
   latest: async (): Promise<NetworkStats> => {
@@ -223,33 +258,10 @@ export const api = {
   // lowers /nodes/[pubkey] to that interval and turns repeat crawler hits
   // into background regenerations. Country and ISP pages share `node`.
   // Mempool answers a missing node with 500 {"error":"Failed to get node"},
-  // and uses that same body when the query throws. Confirm with search
-  // before calling it missing; a failed or contradictory search is rethrown.
-  node: async (pubKey: string): Promise<NodeDetail> => {
-    const path = `/lightning/nodes/${pubKey}`;
-    try {
-      return await j<NodeDetail>(path, 86400);
-    } catch (err) {
-      if (!isMempoolNodeMiss(err)) throw err;
-      let search: "missing" | "present" | "failed" = "failed";
-      try {
-        const rows = await j<Array<{ public_key?: string }>>(
-          `/lightning/nodes/search/${encodeURIComponent(pubKey)}`,
-          86400,
-        );
-        const known = rows.some(
-          (row) => row.public_key?.toLowerCase() === pubKey.toLowerCase(),
-        );
-        search = known ? "present" : "missing";
-      } catch {
-        search = "failed";
-      }
-      if (nodeDetailFailureOutcome(err, search) === "missing") {
-        throw new MissingResourceError(`${BASE}${path}`);
-      }
-      throw err;
-    }
-  },
+  // and uses that same body when the query throws. Search on that host has
+  // to agree before it is a miss; a timeout or 429 fails over instead.
+  node: (pubKey: string): Promise<NodeDetail> =>
+    resolveNodeDetail<NodeDetail>(pubKey, { revalidate: 86400 }),
   nodeStats: (pubKey: string) =>
     j<NodeStatsPoint[]>(`/lightning/nodes/${pubKey}/statistics`, 86400),
   nodeChannels: (
@@ -261,10 +273,7 @@ export const api = {
       `/lightning/channels?public_key=${pubKey}&status=${status}&index=${index}`,
       86400,
     ),
-  tipHeight: async (): Promise<number> => {
-    const v = await jRoot<number | string>("/blocks/tip/height", 86400);
-    return typeof v === "number" ? v : parseInt(v, 10);
-  },
+  tipHeight: (): Promise<number> => readSharedTip(),
 };
 
 // Formatting helpers — all data uses tabular-nums + mono.

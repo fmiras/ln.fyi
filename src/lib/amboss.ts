@@ -8,6 +8,7 @@
  */
 
 const ENDPOINT = "https://api.amboss.space/graphql";
+const AMBOSS_TIMEOUT_MS = 2_000;
 
 export type AmbossNode = {
   alias: string | null;
@@ -54,6 +55,7 @@ export async function ambossNode(pubkey: string): Promise<AmbossNode | null> {
       },
       body: JSON.stringify({ query: QUERY, variables: { pubkey } }),
       next: { revalidate: 86400 },
+      signal: AbortSignal.timeout(AMBOSS_TIMEOUT_MS),
     });
     if (!res.ok) return null;
     const body = (await res.json()) as {

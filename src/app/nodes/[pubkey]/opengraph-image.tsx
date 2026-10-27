@@ -3,6 +3,7 @@ import { api, safe, formatSats, formatNumber } from "@/lib/api";
 
 export const alt = "Lightning Node profile on ln.fyi";
 export const revalidate = 86400;
+export const maxDuration = 15;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
