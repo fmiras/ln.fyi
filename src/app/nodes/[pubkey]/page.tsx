@@ -24,6 +24,10 @@ import {
   gradeForNode,
   gradeShareText,
   gradeShareUrl,
+  isModestGrade,
+  bestStatLine,
+  publicPercentile,
+  shareButtonLabel,
   xIntentHref,
   type GradeSnapshot,
 } from "@/lib/grade";
@@ -68,11 +72,16 @@ export async function generateStaticParams() {
   return params;
 }
 
+function nodeImage(pubkey: string): string {
+  return `${SITE_URL}/nodes/${pubkey}/opengraph-image`;
+}
+
 function unavailableMetadata(pubkey: string): Metadata {
   return buildMetadata({
     title: "Lightning node",
     description: "Lightning Network node profile on ln.fyi. Directory data is temporarily unavailable.",
     path: `/nodes/${pubkey}`,
+    image: nodeImage(pubkey),
     noindex: true,
   });
 }
@@ -130,6 +139,7 @@ export async function generateMetadata({
     title,
     description: descriptionParts,
     path: `/nodes/${pubkey}`,
+    image: nodeImage(pubkey),
   });
 }
 
@@ -242,14 +252,22 @@ export default async function NodePage({
       firstSeen: node.first_seen,
     },
     snapshot,
+    now,
   );
   const fee = feeMarkFromRates(
     (openPage ?? []).map((channel) => channel.fee_rate),
     snapshot?.medFeeRate ?? 0,
   );
   const shareUrl = gradeShareUrl(pubkey, SITE_URL);
+  const percentile =
+    grade && snapshot
+      ? publicPercentile(node.public_key || pubkey, grade.score, snapshot, now)
+      : null;
   const shareText = grade
-    ? gradeShareText(nodeAlias, grade.letter, grade.score)
+    ? gradeShareText(nodeAlias, grade.letter, grade.score, {
+        percentile,
+        lead: isModestGrade(grade.letter) ? bestStatLine(grade) : null,
+      })
     : "";
   const jsonLd = [
     datasetJsonLd({
@@ -282,7 +300,9 @@ export default async function NodePage({
       <div className="rule-b px-4 md:px-6 lg:px-8 py-3 md:py-4 shrink-0">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-6">
           <div className="min-w-0 flex-1">
-            <div className="mono-xs text-amber mb-1.5">§ NODE PROFILE</div>
+            <div className="font-mono text-[12px] tracking-[0.14em] uppercase text-amber mb-1.5">
+              § Node profile
+            </div>
             <div className="flex items-center gap-2.5 md:gap-3">
               <span
                 className="inline-block w-2.5 h-2.5 md:w-3 md:h-3 rounded-full shrink-0"
@@ -295,7 +315,7 @@ export default async function NodePage({
                 {(node.alias || "ANONYMOUS").toUpperCase()}
               </h1>
             </div>
-            <div className="mono-xs text-paper-faint tabular break-all mt-1.5 max-w-3xl hidden md:block">
+            <div className="font-mono text-[12px] text-paper-dim tabular break-all mt-1.5 max-w-3xl hidden md:block">
               {pubkey}
             </div>
           </div>
@@ -309,12 +329,16 @@ export default async function NodePage({
         </div>
       </div>
 
-      {grade && (
+      {grade && snapshot && (
         <GradeCard
           grade={grade}
           fee={fee}
           intentHref={xIntentHref(shareText, shareUrl)}
           shareUrl={shareUrl}
+          shareText={shareText}
+          primaryLabel={shareButtonLabel(grade.letter)}
+          asOf={snapshot.asOf}
+          percentile={percentile}
         />
       )}
 

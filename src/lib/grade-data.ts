@@ -54,10 +54,11 @@ async function readGradeSnapshot(): Promise<GradeSnapshot> {
     nodeCount: stats?.node_count ?? 0,
     channelCount: stats?.channel_count ?? 0,
     medFeeRate: stats?.med_fee_rate ?? 0,
+    asOf: Math.floor(Date.now() / 1000),
   });
 }
 
-const loadGradeSnapshot = unstable_cache(readGradeSnapshot, ["grade-snapshot-v1"], {
+const loadGradeSnapshot = unstable_cache(readGradeSnapshot, ["grade-snapshot-v2"], {
   revalidate: DAY,
 });
 

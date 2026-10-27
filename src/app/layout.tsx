@@ -40,6 +40,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
+  // Absolute social URLs are preferred. Relative metadata still resolves here.
   metadataBase: new URL(SITE_URL),
   title: {
     default: `${SITE_NAME} — ${SITE_TAGLINE}`,

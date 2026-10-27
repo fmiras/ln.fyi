@@ -5,19 +5,30 @@ import {
   CHANNELS_FULL,
   FEE_NOTE,
   GRADE_METHOD,
+  GRADE_SUMMARY,
   GRADE_WEIGHTS,
   RANK_FLOOR_SCORE,
   UNRANKED_CAP,
+  bestStatLine,
   buildGradeSnapshot,
+  feeComparison,
   feeMarkFromRates,
+  formatGradeDay,
   gradeForNode,
   gradeNode,
   gradeShareText,
   gradeShareUrl,
+  gradeStamp,
+  heldBackLine,
+  isModestGrade,
+  letterColor,
   letterFor,
+  publicPercentile,
   rankMark,
+  shareButtonLabel,
   subjectFromProfile,
   topGraded,
+  unrankedGradeCeiling,
   xIntentHref,
   type GradeSnapshot,
   type RankingRow,
@@ -271,8 +282,22 @@ describe("gradeNode", () => {
     assert.match(GRADE_METHOD, /connectivity 30/);
     assert.match(GRADE_METHOD, /age 20/);
     assert.match(GRADE_METHOD, /54/);
+    assert.match(GRADE_METHOD, /maxes out at 54/);
     assert.match(GRADE_METHOD, /3 years/);
+    assert.match(GRADE_SUMMARY, /capacity, channels, connectivity and age/);
     assert.match(FEE_NOTE, /not part of the grade/i);
+  });
+
+  it("does not put the unranked cap jargon on the capacity caption", () => {
+    const snap = snapshot();
+    const grade = gradeNode(
+      { publicKey: "dd", capacity: snap.medCapacity, channels: 2, firstSeen: NOW - YEAR },
+      snap,
+      NOW,
+    );
+    const detail = grade?.factors.find((factor) => factor.key === "capacity")?.detail ?? "";
+    assert.match(detail, /at snapshot/);
+    assert.doesNotMatch(detail, /cap 54/);
   });
 });
 
@@ -340,11 +365,104 @@ describe("fee mark and share links", () => {
   it("builds a share URL with ref=share and an X intent for that URL", () => {
     const url = gradeShareUrl("AbC", "https://ln.fyi/");
     assert.equal(url, "https://ln.fyi/nodes/abc?ref=share");
-    const text = gradeShareText("  ACINQ\n", "A+", 100);
-    assert.match(text, /^ACINQ scored A\+ \(100\/100\)/);
+    const text = gradeShareText("  ACINQ\n", "A+", 100, { percentile: 99 });
+    assert.equal(text, "ACINQ scores A+ (100), better than 99% of Lightning nodes");
     const href = xIntentHref(text, url);
     assert.ok(href.startsWith("https://twitter.com/intent/tweet?"));
     assert.ok(href.includes("ref%3Dshare"));
-    assert.equal(gradeShareText("   ", "F", 12).startsWith("This node scored F"), true);
+    assert.equal(gradeShareText("   ", "C", 74), "This node scores C (74) on ln.fyi");
+    const modest = gradeShareText("LNT", "F", 42, { lead: "4.2 years on a 3-year scale" });
+    assert.match(modest, /^LNT — 4\.2 years/);
+    assert.match(modest, /Grade F \(42\)/);
+    assert.equal(shareButtonLabel("A+"), "Share on X");
+    assert.equal(shareButtonLabel("C"), "Share on X");
+    assert.equal(shareButtonLabel("D+"), "Share node");
+    assert.equal(shareButtonLabel("F"), "Share node");
+    assert.equal(isModestGrade("D-"), true);
+    assert.equal(isModestGrade("C"), false);
+  });
+
+  it("describes fees without a 0-100 score", () => {
+    const high = feeMarkFromRates([2499], 105);
+    assert.ok(high);
+    const line = feeComparison(high);
+    assert.match(line, /^Fees: 24× the network median \(2,499 vs 105 ppm\)/);
+    assert.match(line, /not part of the grade/);
+    assert.doesNotMatch(line, /FEE SAMPLE/);
+    assert.doesNotMatch(line, new RegExp(`\\b${high.score}\\b`));
+    const zero = feeMarkFromRates([0, 0], 100);
+    assert.ok(zero);
+    assert.equal(zero.score, 0);
+    const zeroLine = feeComparison(zero);
+    assert.match(zeroLine, /^Fees: below the network median \(0 vs 100 ppm\)/);
+    assert.doesNotMatch(zeroLine, /0×/);
+    assert.doesNotMatch(zeroLine, /FEE SAMPLE/);
+    const even = feeMarkFromRates([100], 100);
+    assert.match(feeComparison(even!), /at the network median/);
+  });
+});
+
+describe("percentile, colors, and held-back copy", () => {
+  it("formats the snapshot day in UTC", () => {
+    const unix = Date.UTC(2026, 9, 27) / 1000;
+    assert.equal(formatGradeDay(unix), "Oct 27");
+    assert.equal(gradeStamp(unix), "Graded Oct 27 · daily snapshot");
+  });
+
+  it("colors A amber, B through D off-white, and F muted red", () => {
+    assert.equal(letterColor("A+"), "#ff8a3d");
+    assert.equal(letterColor("A"), "#ff8a3d");
+    assert.equal(letterColor("A-"), "#ff8a3d");
+    assert.equal(letterColor("B"), "#eceae3");
+    assert.equal(letterColor("C+"), "#eceae3");
+    assert.equal(letterColor("D-"), "#eceae3");
+    assert.equal(letterColor("F"), "rgba(229, 72, 77, 0.85)");
+  });
+
+  it("names the two weakest marks below an A", () => {
+    const snap = snapshot();
+    const grade = gradeNode(
+      { publicKey: "dd", capacity: snap.medCapacity, channels: 2, firstSeen: NOW - YEAR },
+      snap,
+      NOW,
+    );
+    assert.ok(grade);
+    assert.notEqual(grade.letter, "A+");
+    assert.notEqual(grade.letter, "A");
+    const line = heldBackLine(grade);
+    assert.match(line ?? "", /^Held back by /);
+    const top = gradeNode(
+      { publicKey: "aa", capacity: 50e8, channels: 400, firstSeen: NOW - 5 * YEAR },
+      snap,
+      NOW,
+    );
+    assert.ok(top);
+    if (top.letter === "A+" || top.letter === "A") {
+      assert.equal(heldBackLine(top), null);
+    }
+    assert.ok(bestStatLine(grade).length > 0);
+  });
+
+  it("reports a public percentile only above the unranked ceiling", () => {
+    const snap = snapshot();
+    assert.equal(unrankedGradeCeiling(), 72);
+    assert.ok(snap.nodeCount > 100);
+    const low = gradeNode(
+      { publicKey: "dd", capacity: snap.medCapacity, channels: 2, firstSeen: NOW - YEAR },
+      snap,
+      NOW,
+    );
+    assert.ok(low);
+    assert.ok(low.score <= unrankedGradeCeiling());
+    assert.equal(publicPercentile("dd", low.score, snap, NOW), null);
+    const top = gradeNode(
+      { publicKey: "aa", capacity: 50e8, channels: 400, firstSeen: NOW - 5 * YEAR },
+      snap,
+      NOW,
+    );
+    assert.ok(top);
+    assert.ok(top.score > unrankedGradeCeiling());
+    const pct = publicPercentile("aa", top.score, snap, NOW);
+    assert.equal(pct, 99);
   });
 });

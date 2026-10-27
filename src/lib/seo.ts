@@ -26,9 +26,12 @@ type MetaArgs = {
   title: string;
   description: string;
   path: string;
+  /** Absolute image URL. Width and height are the share-card size. */
   image?: string;
   noindex?: boolean;
 };
+
+const SHARE_IMAGE = { width: 1200, height: 630, type: "image/png" } as const;
 
 export function buildMetadata({
   title,
@@ -38,8 +41,12 @@ export function buildMetadata({
   noindex,
 }: MetaArgs): Metadata {
   const url = `${SITE_URL}${path}`;
+  // Next.js only keeps a file-based opengraph-image when this object does
+  // not own an `images` key. Setting `images: undefined` still counts, and
+  // that dropped og:image / twitter:image on every page using this helper.
+  // Pass an absolute URL when the card must point at a specific PNG.
   const images = image
-    ? [{ url: image, width: 1200, height: 630, alt: title }]
+    ? [{ url: image, ...SHARE_IMAGE, alt: title }]
     : undefined;
   return {
     title,
@@ -54,13 +61,13 @@ export function buildMetadata({
       url,
       siteName: SITE_NAME,
       type: "website",
-      images,
+      ...(images ? { images } : {}),
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: images?.map((i) => i.url),
+      ...(images ? { images } : {}),
     },
   };
 }

@@ -58,6 +58,10 @@ export type GradeSnapshot = {
   medCapacity: number;
   avgChannels: number;
   medFeeRate: number;
+  /** Public node count from the same daily statistics pull. */
+  nodeCount: number;
+  /** Unix seconds when this snapshot was read. Cached with the snapshot. */
+  asOf: number;
   connectivityFloor: number;
   liquidityRank: Record<string, number>;
   connectivityRank: Record<string, number>;
@@ -79,8 +83,11 @@ export type RankingRow = {
   firstSeen?: number;
 };
 
+export const GRADE_SUMMARY =
+  "Graded against the public Lightning network on capacity, channels, connectivity and age.";
+
 export const GRADE_METHOD =
-  "Capacity and connectivity are rank marks: 100 at #1 of the public top 100, 55 at #100, and at most 54 outside that list. Outside the list, capacity is a log curve around the network median, where the median scores 50. Channels are a log curve, 45 at the average public node and 100 at 1,000 channels. Age reaches 100 at 3 years. Weights are capacity 30, channels 20, connectivity 30, and age 20. A missing mark is dropped and the rest are rescaled.";
+  "Capacity and connectivity are rank marks: 100 at #1 of the public top 100, 55 at #100, and at most 54 outside that list. Capacity outside the top 100 maxes out at 54. Outside the list, capacity is a log curve around the network median, where the median scores 50. Channels are a log curve, 45 at the average public node and 100 at 1,000 channels. Age reaches 100 at 3 years. Weights are capacity 30, channels 20, connectivity 30, and age 20. A missing mark is dropped and the rest are rescaled.";
 
 export const FEE_NOTE =
   "The fee mark uses the median fee_rate on the open channels already loaded with this profile (the first page), against the network median. It is 100 at that median and loses 25 points per doubling of the distance. It is not part of the grade, so the share image and the top 20 stay on the same number.";
@@ -114,13 +121,47 @@ export function letterFor(score: number): string {
   return "F";
 }
 
-/** Hex used on the page and in the share image. */
+/**
+ * A grades are amber. B through D stay off-white. F is muted red at 85%.
+ */
 export function letterColor(letter: string): string {
   if (letter.startsWith("A")) return "#ff8a3d";
-  if (letter.startsWith("B")) return "#7fd8a4";
-  if (letter.startsWith("C")) return "#eceae3";
-  if (letter.startsWith("D")) return "#9c998f";
-  return "#ff6b6b";
+  if (letter === "F") return "rgba(229, 72, 77, 0.85)";
+  return "#eceae3";
+}
+
+const GRADE_MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+] as const;
+
+export function formatGradeDay(unix: number): string {
+  const date = new Date(unix * 1000);
+  const month = GRADE_MONTHS[date.getUTCMonth()] ?? "Jan";
+  return `${month} ${date.getUTCDate()}`;
+}
+
+export function gradeStamp(unix: number): string {
+  return `Graded ${formatGradeDay(unix)} · daily snapshot`;
+}
+
+/** D and F are not a grade-led share. */
+export function isModestGrade(letter: string): boolean {
+  return letter === "F" || letter.startsWith("D");
+}
+
+export function shareButtonLabel(letter: string): string {
+  return isModestGrade(letter) ? "Share node" : "Share on X";
 }
 
 export function formatCount(n: number): string {
@@ -169,6 +210,7 @@ export function buildGradeSnapshot(input: {
   nodeCount: number;
   channelCount: number;
   medFeeRate: number;
+  asOf?: number;
 }): GradeSnapshot {
   const liquidityRank = rankMap(input.liquidity);
   const connectivityRank = rankMap(input.connectivity);
@@ -219,10 +261,13 @@ export function buildGradeSnapshot(input: {
 
   const nodeCount = Number(input.nodeCount) || 0;
   const channelCount = Number(input.channelCount) || 0;
+  const asOf = Number(input.asOf) || Math.floor(Date.now() / 1000);
   return {
     medCapacity: Number(input.medCapacity) || 0,
     avgChannels: nodeCount > 0 ? channelCount / nodeCount : 0,
     medFeeRate: Number(input.medFeeRate) || 0,
+    nodeCount,
+    asOf,
     connectivityFloor,
     liquidityRank,
     connectivityRank,
@@ -245,7 +290,7 @@ function capacityMark(
   const raw = 50 + 20 * Math.log10(capacity / medCapacity);
   return {
     score: clamp(Math.round(raw), 0, UNRANKED_CAP),
-    detail: `${formatBtc(capacity)} BTC vs ${formatBtc(medCapacity)} BTC median, cap ${UNRANKED_CAP}`,
+    detail: `${formatBtc(capacity)} BTC at snapshot vs ${formatBtc(medCapacity)} BTC median`,
   };
 }
 
@@ -260,9 +305,10 @@ function channelMark(
   const denom = Math.log10(CHANNELS_FULL / avgChannels);
   const raw = 45 + (55 * Math.log10(channels / avgChannels)) / denom;
   const avgLabel = avgChannels >= 10 ? avgChannels.toFixed(0) : avgChannels.toFixed(1);
+  const noun = channels === 1 ? "channel" : "channels";
   return {
     score: clamp(Math.round(raw)),
-    detail: `${formatCount(channels)} channels vs ${avgLabel} average`,
+    detail: `${formatCount(channels)} ${noun} at snapshot vs ${avgLabel} average`,
   };
 }
 
@@ -284,7 +330,7 @@ function connectivityMark(
   const raw = (UNRANKED_CAP * Math.log10(1 + channels)) / Math.log10(1 + floor);
   return {
     score: clamp(Math.round(raw), 0, UNRANKED_CAP),
-    detail: `${formatCount(channels)} channels, below the top-${RANK_LIST_SIZE} floor of ${formatCount(floor)}`,
+    detail: `${formatCount(channels)} channels at snapshot, below the top-${RANK_LIST_SIZE} floor of ${formatCount(floor)}`,
   };
 }
 
@@ -437,14 +483,116 @@ export function feeMarkFromRates(
   };
 }
 
+/**
+ * Highest score an unranked node can reach: capacity and connectivity sit
+ * on the top-100 cap, channels and age can still be full marks.
+ * A higher score beats every public node outside the daily ranking lists.
+ */
+export function unrankedGradeCeiling(): number {
+  const weight =
+    GRADE_WEIGHTS.capacity +
+    GRADE_WEIGHTS.channels +
+    GRADE_WEIGHTS.connectivity +
+    GRADE_WEIGHTS.age;
+  const raw =
+    UNRANKED_CAP * GRADE_WEIGHTS.capacity +
+    100 * GRADE_WEIGHTS.channels +
+    UNRANKED_CAP * GRADE_WEIGHTS.connectivity +
+    100 * GRADE_WEIGHTS.age;
+  return Math.round(raw / weight);
+}
+
+/**
+ * Percent of public nodes this score beats. Only returned when the score is
+ * above the unranked ceiling, so nodes outside the snapshot cannot outrank
+ * it. No extra directory calls — the snapshot already holds the top lists
+ * and the public node count.
+ */
+export function publicPercentile(
+  publicKey: string,
+  score: number,
+  snapshot: GradeSnapshot,
+  now: number,
+): number | null {
+  const nodeCount = snapshot.nodeCount;
+  if (!(nodeCount > 1) || score <= unrankedGradeCeiling()) return null;
+  const key = keyOf(publicKey);
+  let higher = 0;
+  let tied = 0;
+  for (const node of snapshot.ranked) {
+    if (node.publicKey === key) continue;
+    const grade = gradeNode(node, snapshot, now);
+    if (!grade) continue;
+    if (grade.score > score) higher += 1;
+    else if (grade.score === score) tied += 1;
+  }
+  const worse = nodeCount - 1 - higher - tied;
+  if (worse <= 0) return null;
+  return Math.min(99, Math.max(0, Math.round((worse / (nodeCount - 1)) * 100)));
+}
+
+export function percentileLine(percent: number): string {
+  return `Better than ${percent}% of public nodes`;
+}
+
+export function bestFactor(grade: NodeGrade): GradeFactor {
+  const best = [...grade.factors].sort(
+    (a, b) => b.score - a.score || a.label.localeCompare(b.label),
+  )[0];
+  return best ?? grade.factors[0];
+}
+
+export function bestStatLine(grade: NodeGrade): string {
+  return bestFactor(grade).detail;
+}
+
+/** Two weakest marks, for any grade below A. */
+export function heldBackLine(grade: NodeGrade): string | null {
+  if (grade.letter === "A+" || grade.letter === "A") return null;
+  const weak = [...grade.factors]
+    .sort((a, b) => a.score - b.score || a.label.localeCompare(b.label))
+    .slice(0, 2);
+  if (weak.length === 0) return null;
+  const parts = weak.map((factor) => `${factor.label.toLowerCase()} (${factor.score})`);
+  if (parts.length === 1) return `Held back by ${parts[0]}`;
+  return `Held back by ${parts[0]} and ${parts[1]}`;
+}
+
+export function feeComparison(fee: FeeMark): string {
+  const ratio = fee.networkMedianPpm > 0 ? fee.medianPpm / fee.networkMedianPpm : 0;
+  let pace: string;
+  if (ratio >= 1.05) {
+    const rounded = ratio >= 10 ? Math.round(ratio) : Math.round(ratio * 10) / 10;
+    pace = `${rounded}× the network median`;
+  } else if (ratio <= 0.95) {
+    // A near-zero ratio rounded to 0× reads as the old fee score.
+    if (ratio < 0.05) pace = "below the network median";
+    else pace = `${Math.round(ratio * 10) / 10}× the network median`;
+  } else {
+    pace = "at the network median";
+  }
+  return `Fees: ${pace} (${formatCount(fee.medianPpm)} vs ${formatCount(fee.networkMedianPpm)} ppm) · not part of the grade`;
+}
+
 export function gradeShareUrl(pubkey: string, site = "https://ln.fyi"): string {
   const root = site.replace(/\/$/, "");
   return `${root}/nodes/${keyOf(pubkey)}?ref=share`;
 }
 
-export function gradeShareText(alias: string, letter: string, score: number): string {
+export function gradeShareText(
+  alias: string,
+  letter: string,
+  score: number,
+  extra?: { percentile?: number | null; lead?: string | null },
+): string {
   const name = alias.replace(/\s+/g, " ").trim().slice(0, 40) || "This node";
-  return `${name} scored ${letter} (${score}/100) on ln.fyi — a public Lightning node grade.`;
+  if (extra?.percentile != null) {
+    return `${name} scores ${letter} (${score}), better than ${extra.percentile}% of Lightning nodes`;
+  }
+  if (isModestGrade(letter) && extra?.lead) {
+    return `${name} — ${extra.lead}. Grade ${letter} (${score}) on ln.fyi`;
+  }
+  return `${name} scores ${letter} (${score}) on ln.fyi`;
 }
 
 export function xIntentHref(text: string, url: string): string {
