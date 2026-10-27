@@ -91,8 +91,9 @@ export function letterGrade(score: number): string {
 }
 
 export function scoreCapacity(sats: number): number {
-  if (!Number.isFinite(sats) || sats <= 0) return 5;
-  const btc = sats / 1e8;
+  const amount = asNumber(sats);
+  if (!Number.isFinite(amount) || amount <= 0) return 5;
+  const btc = amount / 1e8;
   if (btc < 0.01) return 18;
   if (btc < 0.05) return 32;
   if (btc < 0.2) return 48;
@@ -340,6 +341,13 @@ function summarize(letter: string, factors: GradeFactor[]): string {
   return `${letter} · strongest in ${best.label.toLowerCase()} (${best.score}), lightest on ${worst.label.toLowerCase()} (${worst.score}).`;
 }
 
+/** Mempool JSON sometimes sends satoshi amounts as strings. */
+function asNumber(value: unknown): number {
+  if (typeof value === "number") return value;
+  if (typeof value === "string" && value.trim() !== "") return Number(value);
+  return Number.NaN;
+}
+
 function clamp(n: number, lo = 0, hi = 100): number {
   if (!Number.isFinite(n)) return lo;
   return Math.max(lo, Math.min(hi, n));
@@ -354,7 +362,7 @@ function formatPpm(n: number): string {
 }
 
 export function btcLabel(sats: number): string {
-  const btc = sats / 1e8;
+  const btc = asNumber(sats) / 1e8;
   if (!Number.isFinite(btc)) return "0";
   if (Math.abs(btc) >= 100) return btc.toLocaleString("en-US", { maximumFractionDigits: 0 });
   if (Math.abs(btc) >= 1) {

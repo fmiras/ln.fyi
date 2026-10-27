@@ -56,6 +56,15 @@ describe("factor scores", () => {
     assert.equal(total, 100);
   });
 
+  it("scores capacity when the directory sends satoshis as a string", () => {
+    const sats = "32800000000" as unknown as number;
+    assert.equal(scoreCapacity(sats), 100);
+    const grade = gradeNode(input({ capacitySats: sats, activeChannels: 8 }));
+    const capacity = grade.factors.find((factor) => factor.id === "capacity");
+    assert.equal(capacity?.score, 100);
+    assert.match(capacity?.detail ?? "", /328 BTC/);
+  });
+
   it("raises capacity and channel scores as the node gets larger", () => {
     assert.ok(scoreCapacity(0.01e8) > scoreCapacity(0));
     assert.ok(scoreCapacity(1e8) > scoreCapacity(0.2e8));

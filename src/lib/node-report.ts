@@ -18,14 +18,16 @@ export function gradeFromProfile(
     : [];
   const opens = profile.opens ?? [];
   const input: GradeInput = {
-    capacitySats: node.capacity ?? 0,
+    capacitySats: Number(node.capacity) || 0,
     activeChannels: node.active_channel_count ?? 0,
     firstSeen: node.first_seen || null,
     updatedAt: node.updated_at || null,
     now,
     clearnetSockets: sockets.filter((socket) => !socket.includes(".onion")).length,
     torSockets: sockets.filter((socket) => socket.includes(".onion")).length,
-    feeRatesPpm: opens.map((channel) => channel.fee_rate).filter((rate) => Number.isFinite(rate)),
+    feeRatesPpm: opens
+      .map((channel) => Number(channel.fee_rate))
+      .filter((rate) => Number.isFinite(rate)),
     peerChannelCounts: opens
       .map((channel) => Number(channel.node?.channels))
       .filter((count) => Number.isFinite(count)),

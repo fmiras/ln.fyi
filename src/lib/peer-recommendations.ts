@@ -69,7 +69,7 @@ async function buildRecommendation(pubkey: string): Promise<Recommendation> {
     pubkey,
     alias: (node.alias || "Anonymous").trim() || "Anonymous",
     activeChannels: active,
-    capacity: node.capacity ?? 0,
+    capacity: Number(node.capacity) || 0,
     channelsSampled,
     distinctPeers: peers.size,
     peersComplete: !failed && active <= pages * CHANNEL_PAGE,
