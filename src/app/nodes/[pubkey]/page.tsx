@@ -35,6 +35,7 @@ import { GradeCard } from "@/components/grade-card";
 import {
   SITE_NAME,
   SITE_URL,
+  absoluteUrl,
   breadcrumbJsonLd,
   buildMetadata,
   datasetJsonLd,
@@ -73,7 +74,7 @@ export async function generateStaticParams() {
 }
 
 function nodeImage(pubkey: string): string {
-  return `${SITE_URL}/nodes/${pubkey}/opengraph-image`;
+  return absoluteUrl(`/nodes/${pubkey}/opengraph-image`);
 }
 
 function unavailableMetadata(pubkey: string): Metadata {

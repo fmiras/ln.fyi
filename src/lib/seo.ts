@@ -22,6 +22,25 @@ export const SITE_URL = "https://ln.fyi";
 export const SITE_NAME = "ln.fyi";
 export const SITE_TAGLINE = "An editorial atlas of the Lightning Network";
 
+/**
+ * Canonical metadata stays on ln.fyi. Share images follow the deployment that
+ * actually renders them: production uses ln.fyi, a preview uses its own host
+ * so the tag is not a 404 against production before this branch ships.
+ */
+export function deploymentOrigin(): string {
+  if (process.env.VERCEL_ENV === "production") return SITE_URL;
+  if (process.env.VERCEL_ENV === "preview") {
+    const host = process.env.VERCEL_BRANCH_URL || process.env.VERCEL_URL;
+    if (host) return `https://${host}`;
+  }
+  return SITE_URL;
+}
+
+export function absoluteUrl(path: string): string {
+  const suffix = path.startsWith("/") ? path : `/${path}`;
+  return `${deploymentOrigin()}${suffix}`;
+}
+
 type MetaArgs = {
   title: string;
   description: string;

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { buildMetadata, siteVerification } from "./seo.ts";
+import { absoluteUrl, buildMetadata, deploymentOrigin, siteVerification } from "./seo.ts";
 
 describe("siteVerification", () => {
   it("omits the metadata field when neither token is set", () => {
@@ -73,5 +73,36 @@ describe("buildMetadata images", () => {
     assert.equal(twImage.url, ogImage.url);
     assert.equal(twImage.width, 1200);
     assert.equal(twImage.height, 630);
+  });
+
+  it("keeps share images on ln.fyi in production and on the preview host otherwise", () => {
+    const env = process.env.VERCEL_ENV;
+    const branch = process.env.VERCEL_BRANCH_URL;
+    const url = process.env.VERCEL_URL;
+    try {
+      delete process.env.VERCEL_ENV;
+      delete process.env.VERCEL_BRANCH_URL;
+      delete process.env.VERCEL_URL;
+      assert.equal(deploymentOrigin(), "https://ln.fyi");
+      assert.equal(absoluteUrl("/grades/opengraph-image"), "https://ln.fyi/grades/opengraph-image");
+
+      process.env.VERCEL_ENV = "production";
+      process.env.VERCEL_BRANCH_URL = "preview.example.vercel.app";
+      assert.equal(absoluteUrl("/nodes/abc/opengraph-image"), "https://ln.fyi/nodes/abc/opengraph-image");
+
+      process.env.VERCEL_ENV = "preview";
+      process.env.VERCEL_BRANCH_URL = "lnfyi-git-example.vercel.app";
+      assert.equal(
+        absoluteUrl("/grades/opengraph-image"),
+        "https://lnfyi-git-example.vercel.app/grades/opengraph-image",
+      );
+    } finally {
+      if (env === undefined) delete process.env.VERCEL_ENV;
+      else process.env.VERCEL_ENV = env;
+      if (branch === undefined) delete process.env.VERCEL_BRANCH_URL;
+      else process.env.VERCEL_BRANCH_URL = branch;
+      if (url === undefined) delete process.env.VERCEL_URL;
+      else process.env.VERCEL_URL = url;
+    }
   });
 });

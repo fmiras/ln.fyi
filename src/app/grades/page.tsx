@@ -10,7 +10,7 @@ import {
   topGraded,
   TOP_GRADE_COUNT,
 } from "@/lib/grade";
-import { SITE_URL, buildMetadata } from "@/lib/seo";
+import { absoluteUrl, buildMetadata } from "@/lib/seo";
 
 export const revalidate = 86400;
 export const maxDuration = 15;
@@ -20,7 +20,7 @@ export const metadata = buildMetadata({
   description:
     "The top 20 public Lightning nodes by ln.fyi's report card: capacity, channels, connectivity rank, and age, scored from the daily ranking snapshot.",
   path: "/grades",
-  image: `${SITE_URL}/grades/opengraph-image`,
+  image: absoluteUrl("/grades/opengraph-image"),
 });
 
 export default async function GradesPage() {
