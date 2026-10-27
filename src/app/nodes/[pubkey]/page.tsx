@@ -18,8 +18,24 @@ import {
   loadNodeProfile,
   type NodeProfile,
 } from "@/lib/node-profile";
+import { getGradeSnapshot } from "@/lib/grade-data";
+import {
+  feeMarkFromRates,
+  gradeForNode,
+  gradeShareText,
+  gradeShareUrl,
+  isModestGrade,
+  publicStanding,
+  shareButtonLabel,
+  strengthLine,
+  xIntentHref,
+  type GradeSnapshot,
+} from "@/lib/grade";
+import { GradeCard } from "@/components/grade-card";
 import {
   SITE_NAME,
+  SITE_URL,
+  absoluteUrl,
   breadcrumbJsonLd,
   buildMetadata,
   datasetJsonLd,
@@ -57,11 +73,16 @@ export async function generateStaticParams() {
   return params;
 }
 
+function nodeImage(pubkey: string): string {
+  return absoluteUrl(`/nodes/${pubkey}/opengraph-image`);
+}
+
 function unavailableMetadata(pubkey: string): Metadata {
   return buildMetadata({
     title: "Lightning node",
     description: "Lightning Network node profile on ln.fyi. Directory data is temporarily unavailable.",
     path: `/nodes/${pubkey}`,
+    image: nodeImage(pubkey),
     noindex: true,
   });
 }
@@ -73,8 +94,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { pubkey } = await params;
   let profile: NodeProfile;
+  let snapshot: GradeSnapshot | null = null;
   try {
-    profile = await loadNodeProfile(pubkey);
+    [profile, snapshot] = await Promise.all([
+      loadNodeProfile(pubkey),
+      getGradeSnapshot(),
+    ]);
   } catch (err) {
     unstable_rethrow(err);
     await capRouteRevalidate(UNAVAILABLE_REVALIDATE_SECONDS);
@@ -91,8 +116,20 @@ export async function generateMetadata({
   const capacityBtc = formatSats(node.capacity);
   const channels = formatNumber(node.active_channel_count);
   const firstSeen = node.first_seen ? formatDate(node.first_seen) : null;
-  const title = `${alias} — Lightning Node Profile`;
+  const grade = gradeForNode(
+    {
+      publicKey: (node.public_key || pubkey).toLowerCase(),
+      capacity: node.capacity,
+      channels: node.active_channel_count,
+      firstSeen: node.first_seen,
+    },
+    snapshot,
+  );
+  const title = grade
+    ? `${alias} — ${grade.letter} (${grade.score}/100)`
+    : `${alias} — Lightning Node Profile`;
   const descriptionParts = [
+    grade ? `Report card ${grade.letter}, ${grade.score} out of 100.` : null,
     `${alias} is a public Lightning Network node holding ${capacityBtc} BTC across ${channels} active channels.`,
     country ? `Hosted in ${country}${isp ? ` on ${isp}` : ""}.` : isp ? `Hosted on ${isp}.` : null,
     firstSeen ? `First seen ${firstSeen}.` : null,
@@ -103,6 +140,7 @@ export async function generateMetadata({
     title,
     description: descriptionParts,
     path: `/nodes/${pubkey}`,
+    image: nodeImage(pubkey),
   });
 }
 
@@ -117,8 +155,12 @@ export default async function NodePage({
   const { pubkey } = await params;
 
   let profile: NodeProfile;
+  let snapshot: GradeSnapshot | null = null;
   try {
-    profile = await loadNodeProfile(pubkey);
+    [profile, snapshot] = await Promise.all([
+      loadNodeProfile(pubkey),
+      getGradeSnapshot(),
+    ]);
   } catch (err) {
     unstable_rethrow(err);
     console.warn(
@@ -203,10 +245,36 @@ export default async function NodePage({
     .slice(0, 24);
 
   const nodeAlias = (node.alias || "Anonymous").trim();
+  const grade = gradeForNode(
+    {
+      publicKey: (node.public_key || pubkey).toLowerCase(),
+      capacity: node.capacity,
+      channels: node.active_channel_count,
+      firstSeen: node.first_seen,
+    },
+    snapshot,
+    now,
+  );
+  const fee = feeMarkFromRates(
+    (openPage ?? []).map((channel) => channel.fee_rate),
+    snapshot?.medFeeRate ?? 0,
+  );
+  const shareUrl = gradeShareUrl(pubkey, SITE_URL);
+  const standing =
+    grade && snapshot
+      ? publicStanding(node.public_key || pubkey, grade.score, snapshot, now)
+      : null;
+  const strength = grade ? strengthLine(grade, snapshot?.nodeCount ?? 0) : null;
+  const shareText = grade
+    ? gradeShareText(nodeAlias, grade.letter, grade.score, {
+        standing,
+        lead: isModestGrade(grade.letter) ? strength : null,
+      })
+    : "";
   const jsonLd = [
     datasetJsonLd({
       name: `${nodeAlias} — Lightning Node`,
-      description: `Public Lightning Network node ${nodeAlias} (${pubkey.slice(0, 12)}…) with ${formatSats(node.capacity)} BTC capacity across ${formatNumber(node.active_channel_count)} active channels.`,
+      description: `Public Lightning Network node ${nodeAlias} (${pubkey.slice(0, 12)}…) with ${formatSats(node.capacity)} BTC capacity across ${formatNumber(node.active_channel_count)} active channels.${grade ? ` Report card ${grade.letter} (${grade.score}/100).` : ""}`,
       path: `/nodes/${pubkey}`,
       lastModified: node.updated_at,
       keywords: [
@@ -234,7 +302,9 @@ export default async function NodePage({
       <div className="rule-b px-4 md:px-6 lg:px-8 py-3 md:py-4 shrink-0">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-6">
           <div className="min-w-0 flex-1">
-            <div className="mono-xs text-amber mb-1.5">§ NODE PROFILE</div>
+            <div className="font-mono text-[12px] tracking-[0.14em] uppercase text-amber mb-1.5">
+              § Node profile
+            </div>
             <div className="flex items-center gap-2.5 md:gap-3">
               <span
                 className="inline-block w-2.5 h-2.5 md:w-3 md:h-3 rounded-full shrink-0"
@@ -247,12 +317,14 @@ export default async function NodePage({
                 {(node.alias || "ANONYMOUS").toUpperCase()}
               </h1>
             </div>
-            <div className="mono-xs text-paper-faint tabular break-all mt-1.5 max-w-3xl hidden md:block">
+            <div className="font-mono text-[12px] text-paper-dim tabular break-all mt-1.5 max-w-3xl hidden md:block">
               {pubkey}
             </div>
           </div>
           <div className="shrink-0 md:text-right">
-            <div className="mono-xs text-paper-faint mb-0.5">TOTAL CAPACITY</div>
+            <div className="font-mono text-[12px] tracking-[0.12em] uppercase text-paper-dim mb-0.5">
+              Total capacity · live
+            </div>
             <div className="display tabular text-[28px] md:text-[32px] lg:text-[40px] leading-[0.95] text-paper">
               {formatSats(node.capacity)}
               <span className="mono-xs text-amber ml-2 align-middle">₿ BTC</span>
@@ -260,6 +332,19 @@ export default async function NodePage({
           </div>
         </div>
       </div>
+
+      {grade && snapshot && (
+        <GradeCard
+          grade={grade}
+          fee={fee}
+          intentHref={xIntentHref(shareText, shareUrl)}
+          shareUrl={shareUrl}
+          shareText={shareText}
+          primaryLabel={shareButtonLabel(grade.letter)}
+          asOf={snapshot.asOf}
+          standing={standing}
+        />
+      )}
 
       {/* KPI row */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-[1px] bg-[color:var(--rule)] rule-b shrink-0">
@@ -459,7 +544,9 @@ function StatCell({
 }) {
   return (
     <div className="bg-ink px-4 py-2.5">
-      <div className="mono-xs text-paper-faint mb-1">{label}</div>
+      <div className="font-mono text-[12px] tracking-[0.12em] uppercase text-paper-dim mb-1">
+        {label}
+      </div>
       <div
         className={`display text-[18px] md:text-[20px] leading-none text-paper truncate ${
           noTabular ? "" : "tabular"

@@ -9,8 +9,14 @@ import {
   SITE_URL,
   jsonLdScript,
   organizationJsonLd,
+  siteVerification,
   websiteJsonLd,
 } from "@/lib/seo";
+
+const verification = siteVerification({
+  GOOGLE_SITE_VERIFICATION: process.env.GOOGLE_SITE_VERIFICATION,
+  BING_SITE_VERIFICATION: process.env.BING_SITE_VERIFICATION,
+});
 
 const plexSans = IBM_Plex_Sans({
   variable: "--font-plex-sans",
@@ -34,6 +40,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
+  // Absolute social URLs are preferred. Relative metadata still resolves here.
   metadataBase: new URL(SITE_URL),
   title: {
     default: `${SITE_NAME} — ${SITE_TAGLINE}`,
@@ -67,6 +74,7 @@ export const metadata: Metadata = {
     description:
       "Capacity, nodes, channels and activity across Bitcoin's Lightning Network.",
   },
+  ...(verification ? { verification } : {}),
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

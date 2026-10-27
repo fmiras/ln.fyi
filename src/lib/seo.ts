@@ -1,16 +1,56 @@
 import type { Metadata } from "next";
 
+/**
+ * Search-console tokens. Rendered only when the env var is set, so a deploy
+ * without them does not emit empty verification tags. Google reads
+ * `google-site-verification`. Bing reads `msvalidate.01`.
+ */
+export function siteVerification(env: {
+  GOOGLE_SITE_VERIFICATION?: string;
+  BING_SITE_VERIFICATION?: string;
+}): Metadata["verification"] | undefined {
+  const google = env.GOOGLE_SITE_VERIFICATION?.trim();
+  const bing = env.BING_SITE_VERIFICATION?.trim();
+  if (!google && !bing) return undefined;
+  return {
+    ...(google ? { google } : {}),
+    ...(bing ? { other: { "msvalidate.01": bing } } : {}),
+  };
+}
+
 export const SITE_URL = "https://ln.fyi";
 export const SITE_NAME = "ln.fyi";
 export const SITE_TAGLINE = "An editorial atlas of the Lightning Network";
+
+/**
+ * Canonical metadata stays on ln.fyi. Share images follow the deployment that
+ * actually renders them: production uses ln.fyi, a preview uses its own host
+ * so the tag is not a 404 against production before this branch ships.
+ */
+export function deploymentOrigin(): string {
+  if (process.env.VERCEL_ENV === "production") return SITE_URL;
+  if (process.env.VERCEL_ENV === "preview") {
+    const host = process.env.VERCEL_BRANCH_URL || process.env.VERCEL_URL;
+    if (host) return `https://${host}`;
+  }
+  return SITE_URL;
+}
+
+export function absoluteUrl(path: string): string {
+  const suffix = path.startsWith("/") ? path : `/${path}`;
+  return `${deploymentOrigin()}${suffix}`;
+}
 
 type MetaArgs = {
   title: string;
   description: string;
   path: string;
+  /** Absolute image URL. Width and height are the share-card size. */
   image?: string;
   noindex?: boolean;
 };
+
+const SHARE_IMAGE = { width: 1200, height: 630, type: "image/png" } as const;
 
 export function buildMetadata({
   title,
@@ -20,8 +60,12 @@ export function buildMetadata({
   noindex,
 }: MetaArgs): Metadata {
   const url = `${SITE_URL}${path}`;
+  // Next.js only keeps a file-based opengraph-image when this object does
+  // not own an `images` key. Setting `images: undefined` still counts, and
+  // that dropped og:image / twitter:image on every page using this helper.
+  // Pass an absolute URL when the card must point at a specific PNG.
   const images = image
-    ? [{ url: image, width: 1200, height: 630, alt: title }]
+    ? [{ url: image, ...SHARE_IMAGE, alt: title }]
     : undefined;
   return {
     title,
@@ -36,13 +80,13 @@ export function buildMetadata({
       url,
       siteName: SITE_NAME,
       type: "website",
-      images,
+      ...(images ? { images } : {}),
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: images?.map((i) => i.url),
+      ...(images ? { images } : {}),
     },
   };
 }
