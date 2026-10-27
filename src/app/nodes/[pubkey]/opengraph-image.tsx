@@ -2,17 +2,18 @@ import { ImageResponse } from "next/og";
 import { api, safe, formatSats, formatNumber } from "@/lib/api";
 import { getGradeSnapshot } from "@/lib/grade-data";
 import {
-  bestStatLine,
   gradeForNode,
   gradeStamp,
   heldBackLine,
   isModestGrade,
   letterColor,
-  percentileLine,
-  publicPercentile,
+  publicStanding,
+  standingLine,
+  strengthLine,
   subjectFromProfile,
   type GradeFactor,
   type NodeGrade,
+  type PublicStanding,
 } from "@/lib/grade";
 
 export const alt = "Lightning node grade on ln.fyi";
@@ -80,17 +81,13 @@ export default async function Image({
           now,
         )
       : null;
-  const percentile =
+  const standing =
     grade && snapshot
-      ? publicPercentile(node?.public_key || pubkey, grade.score, snapshot, now)
+      ? publicStanding(node?.public_key || pubkey, grade.score, snapshot, now)
       : null;
+  const strength = grade ? strengthLine(grade, snapshot?.nodeCount ?? 0) : null;
   const stamp = snapshot ? gradeStamp(snapshot.asOf) : "ln.fyi";
   const modest = grade ? isModestGrade(grade.letter) : false;
-  const lead = grade
-    ? percentile != null
-      ? percentileLine(percentile)
-      : bestStatLine(grade)
-    : null;
 
   return new ImageResponse(
     (
@@ -107,14 +104,14 @@ export default async function Image({
           fontFamily: "sans-serif",
         }}
       >
-        {grade && modest ? (
+        {grade && modest && strength ? (
           <Modest
             alias={alias}
             place={place}
             capacity={capacity}
             channels={channels}
             grade={grade}
-            lead={lead ?? ""}
+            lead={strength}
           />
         ) : (
           <Hero
@@ -123,7 +120,8 @@ export default async function Image({
             capacity={capacity}
             channels={channels}
             grade={grade}
-            percentile={percentile}
+            standing={standing}
+            badge={Boolean(grade && modest)}
           />
         )}
         <div
@@ -150,23 +148,53 @@ function Hero({
   capacity,
   channels,
   grade,
-  percentile,
+  standing,
+  badge,
 }: {
   alias: string;
   place: string;
   capacity: string;
   channels: string;
   grade: NodeGrade | null;
-  percentile: number | null;
+  standing: PublicStanding | null;
+  badge: boolean;
 }) {
   const color = grade ? letterColor(grade.letter) : AMBER;
   const held = grade ? heldBackLine(grade) : null;
+  const placeLine = standing?.bounded ? standingLine(standing) : null;
+  const nameSize = alias.length > 14 ? 58 : 68;
+  if (badge && grade) {
+    return (
+      <div style={{ display: "flex", flex: 1, flexDirection: "column", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div style={{ display: "flex", fontSize: 20, letterSpacing: 3, color: DIM }}>LIGHTNING NODE</div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+            <div style={{ display: "flex", fontSize: 48, fontWeight: 700, color, lineHeight: 1 }}>{grade.letter}</div>
+            <div style={{ display: "flex", fontSize: 28, color: DIM }}>{grade.score}</div>
+          </div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "flex", fontSize: nameSize, fontWeight: 700, letterSpacing: -2, lineHeight: 0.95 }}>{alias}</div>
+          <div style={{ display: "flex", fontSize: 26, color: DIM }}>{place}</div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ display: "flex", gap: 48 }}>
+            <BtcStat label="CAPACITY" value={capacity} />
+            <CountStat label="CHANNELS" value={channels} />
+          </div>
+          {placeLine ? <div style={{ display: "flex", fontSize: 24, color: PAPER }}>{placeLine}</div> : null}
+          <Bars factors={grade.factors} />
+          {held ? <div style={{ display: "flex", fontSize: 20, color: DIM }}>{held}</div> : null}
+        </div>
+      </div>
+    );
+  }
   return (
     <div style={{ display: "flex", flex: 1, justifyContent: "space-between", gap: 24 }}>
       <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", width: 700 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ display: "flex", fontSize: 20, letterSpacing: 3, color: DIM }}>LIGHTNING NODE</div>
-          <div style={{ display: "flex", fontSize: alias.length > 14 ? 58 : 68, fontWeight: 700, letterSpacing: -2, lineHeight: 0.95 }}>{alias}</div>
+          <div style={{ display: "flex", fontSize: nameSize, fontWeight: 700, letterSpacing: -2, lineHeight: 0.95 }}>{alias}</div>
           <div style={{ display: "flex", fontSize: 26, color: DIM }}>{place}</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
@@ -174,9 +202,9 @@ function Hero({
             <BtcStat label="CAPACITY" value={capacity} />
             <CountStat label="CHANNELS" value={channels} />
           </div>
-          {percentile != null && (
-            <div style={{ display: "flex", fontSize: 24, color: PAPER }}>{percentileLine(percentile)}</div>
-          )}
+          {placeLine ? (
+            <div style={{ display: "flex", fontSize: 24, color: PAPER }}>{placeLine}</div>
+          ) : null}
           {grade && <Bars factors={grade.factors} />}
         </div>
       </div>

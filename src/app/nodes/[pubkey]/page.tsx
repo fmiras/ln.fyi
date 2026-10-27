@@ -25,9 +25,9 @@ import {
   gradeShareText,
   gradeShareUrl,
   isModestGrade,
-  bestStatLine,
-  publicPercentile,
+  publicStanding,
   shareButtonLabel,
+  strengthLine,
   xIntentHref,
   type GradeSnapshot,
 } from "@/lib/grade";
@@ -260,14 +260,15 @@ export default async function NodePage({
     snapshot?.medFeeRate ?? 0,
   );
   const shareUrl = gradeShareUrl(pubkey, SITE_URL);
-  const percentile =
+  const standing =
     grade && snapshot
-      ? publicPercentile(node.public_key || pubkey, grade.score, snapshot, now)
+      ? publicStanding(node.public_key || pubkey, grade.score, snapshot, now)
       : null;
+  const strength = grade ? strengthLine(grade, snapshot?.nodeCount ?? 0) : null;
   const shareText = grade
     ? gradeShareText(nodeAlias, grade.letter, grade.score, {
-        percentile,
-        lead: isModestGrade(grade.letter) ? bestStatLine(grade) : null,
+        standing,
+        lead: isModestGrade(grade.letter) ? strength : null,
       })
     : "";
   const jsonLd = [
@@ -321,7 +322,9 @@ export default async function NodePage({
             </div>
           </div>
           <div className="shrink-0 md:text-right">
-            <div className="mono-xs text-paper-faint mb-0.5">TOTAL CAPACITY</div>
+            <div className="font-mono text-[12px] tracking-[0.12em] uppercase text-paper-dim mb-0.5">
+              Total capacity · live
+            </div>
             <div className="display tabular text-[28px] md:text-[32px] lg:text-[40px] leading-[0.95] text-paper">
               {formatSats(node.capacity)}
               <span className="mono-xs text-amber ml-2 align-middle">₿ BTC</span>
@@ -339,7 +342,7 @@ export default async function NodePage({
           shareText={shareText}
           primaryLabel={shareButtonLabel(grade.letter)}
           asOf={snapshot.asOf}
-          percentile={percentile}
+          standing={standing}
         />
       )}
 
@@ -541,7 +544,9 @@ function StatCell({
 }) {
   return (
     <div className="bg-ink px-4 py-2.5">
-      <div className="mono-xs text-paper-faint mb-1">{label}</div>
+      <div className="font-mono text-[12px] tracking-[0.12em] uppercase text-paper-dim mb-1">
+        {label}
+      </div>
       <div
         className={`display text-[18px] md:text-[20px] leading-none text-paper truncate ${
           noTabular ? "" : "tabular"

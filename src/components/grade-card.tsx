@@ -6,9 +6,10 @@ import {
   gradeStamp,
   heldBackLine,
   letterColor,
-  percentileLine,
+  standingLine,
   type FeeMark,
   type NodeGrade,
+  type PublicStanding,
 } from "@/lib/grade";
 import { ShareGrade } from "./share-grade";
 
@@ -20,7 +21,7 @@ export function GradeCard({
   shareText,
   primaryLabel,
   asOf,
-  percentile,
+  standing,
 }: {
   grade: NodeGrade;
   fee: FeeMark | null;
@@ -29,7 +30,7 @@ export function GradeCard({
   shareText: string;
   primaryLabel: string;
   asOf: number;
-  percentile: number | null;
+  standing: PublicStanding | null;
 }) {
   const color = letterColor(grade.letter);
   const heldBack = heldBackLine(grade);
@@ -65,9 +66,16 @@ export function GradeCard({
           {heldBack && (
             <p className="text-[13px] leading-snug text-paper-dim mb-1">{heldBack}</p>
           )}
-          {percentile != null && (
-            <p className="text-[13px] leading-snug text-paper mb-2">{percentileLine(percentile)}</p>
+          {standing?.bounded && (
+            <p className="text-[13px] leading-snug text-paper mb-1">{standingLine(standing)}</p>
           )}
+          <details className="mb-2 max-w-[280px]">
+            <summary className="cursor-pointer text-[13px] leading-snug text-paper-dim">
+              {GRADE_SUMMARY}{" "}
+              <span className="underline underline-offset-2">How grades work</span>
+            </summary>
+            <p className="text-[13px] leading-relaxed text-paper-dim mt-2">{GRADE_METHOD}</p>
+          </details>
           <ShareGrade
             intentHref={intentHref}
             shareUrl={shareUrl}
@@ -96,14 +104,6 @@ export function GradeCard({
           ))}
         </dl>
       </div>
-
-      <p className="text-[13px] leading-relaxed text-paper-dim max-w-3xl mt-3">{GRADE_SUMMARY}</p>
-      <details className="mt-2 max-w-3xl">
-        <summary className="cursor-pointer font-mono text-[12px] text-paper-dim hover:text-paper">
-          How grades work
-        </summary>
-        <p className="text-[13px] leading-relaxed text-paper-dim mt-2">{GRADE_METHOD}</p>
-      </details>
 
       {fee && (
         <p className="text-[13px] leading-relaxed text-paper-dim max-w-3xl mt-3">{feeComparison(fee)}</p>

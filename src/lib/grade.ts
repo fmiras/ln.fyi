@@ -38,6 +38,8 @@ export type GradeFactor = {
   weight: number;
   score: number;
   detail: string;
+  /** Set when this mark comes from a top-100 rank. */
+  rank?: number;
 };
 
 export type NodeGrade = {
@@ -84,7 +86,7 @@ export type RankingRow = {
 };
 
 export const GRADE_SUMMARY =
-  "Graded against the public Lightning network on capacity, channels, connectivity and age.";
+  "Graded against the top 100. Most public nodes score F.";
 
 export const GRADE_METHOD =
   "Capacity and connectivity are rank marks: 100 at #1 of the public top 100, 55 at #100, and at most 54 outside that list. Capacity outside the top 100 maxes out at 54. Outside the list, capacity is a log curve around the network median, where the median scores 50. Channels are a log curve, 45 at the average public node and 100 at 1,000 channels. Age reaches 100 at 3 years. Weights are capacity 30, channels 20, connectivity 30, and age 20. A missing mark is dropped and the rest are rescaled.";
@@ -173,8 +175,8 @@ export function formatCount(n: number): string {
 function formatBtc(sats: number): string {
   const btc = sats / 1e8;
   if (!Number.isFinite(btc)) return "0";
-  if (btc >= 100) return btc.toFixed(0);
-  if (btc >= 1) return btc.toFixed(2);
+  if (btc >= 1000) return btc.toLocaleString("en-US", { maximumFractionDigits: 0 });
+  if (btc >= 1) return btc.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   if (btc >= 0.01) return btc.toFixed(3);
   return btc.toFixed(4);
 }
@@ -279,11 +281,12 @@ function capacityMark(
   capacity: number,
   rank: number | undefined,
   medCapacity: number,
-): { score: number; detail: string } | null {
+): { score: number; detail: string; rank?: number } | null {
   if (rank) {
     return {
       score: rankMark(rank),
-      detail: `Rank #${formatCount(rank)} of the top ${RANK_LIST_SIZE} by capacity`,
+      detail: `${formatBtc(capacity)} BTC at snapshot · #${formatCount(rank)} by capacity`,
+      rank,
     };
   }
   if (!(capacity > 0) || !(medCapacity > 0)) return null;
@@ -316,11 +319,12 @@ function connectivityMark(
   channels: number,
   rank: number | undefined,
   floor: number,
-): { score: number; detail: string } | null {
+): { score: number; detail: string; rank?: number } | null {
   if (rank) {
     return {
       score: rankMark(rank),
       detail: `Rank #${formatCount(rank)} of the top ${RANK_LIST_SIZE} by channels`,
+      rank,
     };
   }
   if (!(floor > 0)) return null;
@@ -328,9 +332,10 @@ function connectivityMark(
     return { score: 0, detail: `Below the top ${RANK_LIST_SIZE}` };
   }
   const raw = (UNRANKED_CAP * Math.log10(1 + channels)) / Math.log10(1 + floor);
+  const noun = channels === 1 ? "channel" : "channels";
   return {
     score: clamp(Math.round(raw), 0, UNRANKED_CAP),
-    detail: `${formatCount(channels)} channels at snapshot, below the top-${RANK_LIST_SIZE} floor of ${formatCount(floor)}`,
+    detail: `${formatCount(channels)} ${noun} at snapshot, below the top-${RANK_LIST_SIZE} floor of ${formatCount(floor)}`,
   };
 }
 
@@ -392,20 +397,28 @@ export function gradeNode(
   );
   const age = ageMark(subject.firstSeen, now);
 
-  const parts: Array<{ key: GradeFactorKey; label: string; mark: { score: number; detail: string } }> = [];
+  const parts: Array<{
+    key: GradeFactorKey;
+    label: string;
+    mark: { score: number; detail: string; rank?: number };
+  }> = [];
   if (capacity) parts.push({ key: "capacity", label: "Capacity", mark: capacity });
   if (channels) parts.push({ key: "channels", label: "Channels", mark: channels });
   if (connectivity) parts.push({ key: "connectivity", label: "Connectivity", mark: connectivity });
   if (age) parts.push({ key: "age", label: "Age", mark: age });
   if (parts.length < 2) return null;
 
-  const factors: GradeFactor[] = parts.map((part) => ({
-    key: part.key,
-    label: part.label,
-    weight: GRADE_WEIGHTS[part.key],
-    score: part.mark.score,
-    detail: part.mark.detail,
-  }));
+  const factors: GradeFactor[] = parts.map((part) => {
+    const factor: GradeFactor = {
+      key: part.key,
+      label: part.label,
+      weight: GRADE_WEIGHTS[part.key],
+      score: part.mark.score,
+      detail: part.mark.detail,
+    };
+    if (part.mark.rank) factor.rank = part.mark.rank;
+    return factor;
+  });
   const weight = factors.reduce((sum, factor) => sum + factor.weight, 0);
   const score = clamp(
     Math.round(factors.reduce((sum, factor) => sum + factor.score * factor.weight, 0) / weight),
@@ -502,37 +515,72 @@ export function unrankedGradeCeiling(): number {
   return Math.round(raw / weight);
 }
 
+export type PublicStanding = {
+  /** 1 + how many graded nodes score strictly higher. */
+  rank: number;
+  /** Public node count from the same daily statistics pull. */
+  total: number;
+  /**
+   * True when this score is above every node outside the top-100 lists, so
+   * `rank` is the place among all public nodes. Below that, outside nodes
+   * can still outscore it and the rank is only within the daily lists.
+   */
+  bounded: boolean;
+};
+
 /**
- * Percent of public nodes this score beats. Only returned when the score is
- * above the unranked ceiling, so nodes outside the snapshot cannot outrank
- * it. No extra directory calls — the snapshot already holds the top lists
- * and the public node count.
+ * Place among public nodes. The old percent rounded `(total - rank) / total`
+ * to an integer and then capped at 99, so rank 1 and rank ~200 both became
+ * "better than 99%". This returns the rank and the real node count instead.
+ * No extra directory calls.
  */
-export function publicPercentile(
+export function publicStanding(
   publicKey: string,
   score: number,
   snapshot: GradeSnapshot,
   now: number,
-): number | null {
-  const nodeCount = snapshot.nodeCount;
-  if (!(nodeCount > 1) || score <= unrankedGradeCeiling()) return null;
+): PublicStanding | null {
+  const total = snapshot.nodeCount;
+  if (!(total > 1)) return null;
   const key = keyOf(publicKey);
   let higher = 0;
-  let tied = 0;
   for (const node of snapshot.ranked) {
     if (node.publicKey === key) continue;
     const grade = gradeNode(node, snapshot, now);
-    if (!grade) continue;
-    if (grade.score > score) higher += 1;
-    else if (grade.score === score) tied += 1;
+    if (grade && grade.score > score) higher += 1;
   }
-  const worse = nodeCount - 1 - higher - tied;
-  if (worse <= 0) return null;
-  return Math.min(99, Math.max(0, Math.round((worse / (nodeCount - 1)) * 100)));
+  return {
+    rank: higher + 1,
+    total,
+    bounded: score > unrankedGradeCeiling(),
+  };
 }
 
-export function percentileLine(percent: number): string {
-  return `Better than ${percent}% of public nodes`;
+export function standingLine(standing: PublicStanding): string {
+  return `#${formatCount(standing.rank)} of ${formatCount(standing.total)} public nodes`;
+}
+
+/**
+ * A brag only when a mark is strong: 70 or better, or a top-100 rank that
+ * sits in the top half of the public network. Weak counts stay off the headline.
+ */
+export function strengthLine(grade: NodeGrade, nodeCount = 0): string | null {
+  const half = nodeCount > 1 ? nodeCount / 2 : 0;
+  const candidates = grade.factors.filter(
+    (factor) =>
+      factor.score >= 70 || (factor.rank != null && half > 0 && factor.rank <= half),
+  );
+  const best = [...candidates].sort(
+    (a, b) => b.score - a.score || (a.rank ?? 1e9) - (b.rank ?? 1e9) || a.label.localeCompare(b.label),
+  )[0];
+  if (!best) return null;
+  if (best.rank && best.key === "capacity") {
+    return `${best.label} ${best.score} · #${formatCount(best.rank)} by capacity`;
+  }
+  if (best.rank && best.key === "connectivity") {
+    return `${best.label} ${best.score} · #${formatCount(best.rank)} by channels`;
+  }
+  return `${best.label} ${best.score}`;
 }
 
 export function bestFactor(grade: NodeGrade): GradeFactor {
@@ -583,11 +631,11 @@ export function gradeShareText(
   alias: string,
   letter: string,
   score: number,
-  extra?: { percentile?: number | null; lead?: string | null },
+  extra?: { standing?: PublicStanding | null; lead?: string | null },
 ): string {
   const name = alias.replace(/\s+/g, " ").trim().slice(0, 40) || "This node";
-  if (extra?.percentile != null) {
-    return `${name} scores ${letter} (${score}), better than ${extra.percentile}% of Lightning nodes`;
+  if (extra?.standing?.bounded) {
+    return `${name} scores ${letter} (${score}), ${standingLine(extra.standing).replace(/ public nodes$/, " Lightning nodes")}`;
   }
   if (isModestGrade(letter) && extra?.lead) {
     return `${name} — ${extra.lead}. Grade ${letter} (${score}) on ln.fyi`;

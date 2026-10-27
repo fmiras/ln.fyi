@@ -23,9 +23,11 @@ import {
   isModestGrade,
   letterColor,
   letterFor,
-  publicPercentile,
+  publicStanding,
   rankMark,
   shareButtonLabel,
+  standingLine,
+  strengthLine,
   subjectFromProfile,
   topGraded,
   unrankedGradeCeiling,
@@ -134,7 +136,9 @@ describe("gradeNode", () => {
     assert.ok(grade);
     const capacity = grade.factors.find((factor) => factor.key === "capacity");
     assert.equal(capacity?.score, 100);
-    assert.match(capacity?.detail ?? "", /Rank #1/);
+    assert.match(capacity?.detail ?? "", /BTC at snapshot/);
+    assert.match(capacity?.detail ?? "", /#1 by capacity/);
+    assert.equal(capacity?.rank, 1);
   });
 
   it("scores the average channel count at 45 and a thousand channels at 100", () => {
@@ -284,7 +288,8 @@ describe("gradeNode", () => {
     assert.match(GRADE_METHOD, /54/);
     assert.match(GRADE_METHOD, /maxes out at 54/);
     assert.match(GRADE_METHOD, /3 years/);
-    assert.match(GRADE_SUMMARY, /capacity, channels, connectivity and age/);
+    assert.match(GRADE_SUMMARY, /top 100/);
+    assert.match(GRADE_SUMMARY, /score F/);
     assert.match(FEE_NOTE, /not part of the grade/i);
   });
 
@@ -365,8 +370,20 @@ describe("fee mark and share links", () => {
   it("builds a share URL with ref=share and an X intent for that URL", () => {
     const url = gradeShareUrl("AbC", "https://ln.fyi/");
     assert.equal(url, "https://ln.fyi/nodes/abc?ref=share");
-    const text = gradeShareText("  ACINQ\n", "A+", 100, { percentile: 99 });
-    assert.equal(text, "ACINQ scores A+ (100), better than 99% of Lightning nodes");
+    const text = gradeShareText("  ACINQ\n", "A+", 100, {
+      standing: { rank: 1, total: 14832, bounded: true },
+    });
+    assert.equal(text, "ACINQ scores A+ (100), #1 of 14,832 Lightning nodes");
+    const mid = gradeShareText("LNT.Thailand", "C", 74, {
+      standing: { rank: 212, total: 14832, bounded: true },
+    });
+    assert.equal(mid, "LNT.Thailand scores C (74), #212 of 14,832 Lightning nodes");
+    assert.equal(
+      gradeShareText("LNT", "F", 27, {
+        standing: { rank: 400, total: 14832, bounded: false },
+      }),
+      "LNT scores F (27) on ln.fyi",
+    );
     const href = xIntentHref(text, url);
     assert.ok(href.startsWith("https://twitter.com/intent/tweet?"));
     assert.ok(href.includes("ref%3Dshare"));
@@ -402,7 +419,7 @@ describe("fee mark and share links", () => {
   });
 });
 
-describe("percentile, colors, and held-back copy", () => {
+describe("rank, colors, and held-back copy", () => {
   it("formats the snapshot day in UTC", () => {
     const unix = Date.UTC(2026, 9, 27) / 1000;
     assert.equal(formatGradeDay(unix), "Oct 27");
@@ -443,10 +460,10 @@ describe("percentile, colors, and held-back copy", () => {
     assert.ok(bestStatLine(grade).length > 0);
   });
 
-  it("reports a public percentile only above the unranked ceiling", () => {
+  it("ranks a public node instead of rounding every high score to 99", () => {
     const snap = snapshot();
     assert.equal(unrankedGradeCeiling(), 72);
-    assert.ok(snap.nodeCount > 100);
+    assert.equal(snap.nodeCount, 10_000);
     const low = gradeNode(
       { publicKey: "dd", capacity: snap.medCapacity, channels: 2, firstSeen: NOW - YEAR },
       snap,
@@ -454,15 +471,94 @@ describe("percentile, colors, and held-back copy", () => {
     );
     assert.ok(low);
     assert.ok(low.score <= unrankedGradeCeiling());
-    assert.equal(publicPercentile("dd", low.score, snap, NOW), null);
+    const lowStanding = publicStanding("dd", low.score, snap, NOW);
+    assert.equal(lowStanding?.bounded, false);
     const top = gradeNode(
       { publicKey: "aa", capacity: 50e8, channels: 400, firstSeen: NOW - 5 * YEAR },
       snap,
       NOW,
     );
-    assert.ok(top);
-    assert.ok(top.score > unrankedGradeCeiling());
-    const pct = publicPercentile("aa", top.score, snap, NOW);
-    assert.equal(pct, 99);
+    const hub = gradeNode(
+      { publicKey: "bb", capacity: 20e8, channels: 900, firstSeen: NOW - 4 * YEAR },
+      snap,
+      NOW,
+    );
+    assert.ok(top && hub);
+    const topStanding = publicStanding("aa", top.score, snap, NOW);
+    const hubStanding = publicStanding("bb", hub.score, snap, NOW);
+    assert.equal(topStanding?.bounded, true);
+    assert.equal(hubStanding?.bounded, true);
+    assert.equal(topStanding?.total, 10_000);
+    assert.equal(Math.min(topStanding?.rank ?? 99, hubStanding?.rank ?? 99), 1);
+    assert.notEqual(topStanding?.rank, hubStanding?.rank);
+    assert.equal(standingLine({ rank: 1, total: 14832, bounded: true }), "#1 of 14,832 public nodes");
+    assert.equal(standingLine({ rank: 212, total: 14832, bounded: true }), "#212 of 14,832 public nodes");
+    assert.doesNotMatch(standingLine(topStanding!), /99%/);
+    assert.doesNotMatch(standingLine(hubStanding!), /99%/);
+  });
+
+  it("leads with a strength only at 70 or a top-half rank", () => {
+    assert.equal(
+      strengthLine(
+        {
+          score: 40,
+          letter: "F",
+          factors: [
+            {
+              key: "connectivity",
+              label: "Connectivity",
+              weight: 30,
+              score: 99,
+              detail: "Rank #4",
+              rank: 4,
+            },
+          ],
+        },
+        14_000,
+      ),
+      "Connectivity 99 · #4 by channels",
+    );
+    assert.equal(
+      strengthLine(
+        {
+          score: 55,
+          letter: "F",
+          factors: [
+            {
+              key: "capacity",
+              label: "Capacity",
+              weight: 30,
+              score: 55,
+              detail: "Rank #80",
+              rank: 80,
+            },
+          ],
+        },
+        14_000,
+      ),
+      "Capacity 55 · #80 by capacity",
+    );
+    assert.equal(
+      strengthLine(
+        {
+          score: 27,
+          letter: "F",
+          factors: [
+            {
+              key: "channels",
+              label: "Channels",
+              weight: 20,
+              score: 40,
+              detail: "1 channel at snapshot vs 1.9 average",
+            },
+            { key: "age", label: "Age", weight: 20, score: 36, detail: "1.1 years" },
+            { key: "capacity", label: "Capacity", weight: 30, score: 30, detail: "0.01 BTC" },
+            { key: "connectivity", label: "Connectivity", weight: 30, score: 8, detail: "below" },
+          ],
+        },
+        14_832,
+      ),
+      null,
+    );
   });
 });
