@@ -4,6 +4,7 @@ import { LiveTick } from "./live-tick";
 const NAV = [
   { href: "/", label: "OVERVIEW", num: "01" },
   { href: "/nodes", label: "NODES", num: "02" },
+  { href: "/grades", label: "GRADES", num: "03" },
   { href: "/about", label: "ABOUT", num: "04" },
 ];
 

@@ -18,8 +18,19 @@ import {
   loadNodeProfile,
   type NodeProfile,
 } from "@/lib/node-profile";
+import { getGradeSnapshot } from "@/lib/grade-data";
+import {
+  feeMarkFromRates,
+  gradeForNode,
+  gradeShareText,
+  gradeShareUrl,
+  xIntentHref,
+  type GradeSnapshot,
+} from "@/lib/grade";
+import { GradeCard } from "@/components/grade-card";
 import {
   SITE_NAME,
+  SITE_URL,
   breadcrumbJsonLd,
   buildMetadata,
   datasetJsonLd,
@@ -73,8 +84,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { pubkey } = await params;
   let profile: NodeProfile;
+  let snapshot: GradeSnapshot | null = null;
   try {
-    profile = await loadNodeProfile(pubkey);
+    [profile, snapshot] = await Promise.all([
+      loadNodeProfile(pubkey),
+      getGradeSnapshot(),
+    ]);
   } catch (err) {
     unstable_rethrow(err);
     await capRouteRevalidate(UNAVAILABLE_REVALIDATE_SECONDS);
@@ -91,8 +106,20 @@ export async function generateMetadata({
   const capacityBtc = formatSats(node.capacity);
   const channels = formatNumber(node.active_channel_count);
   const firstSeen = node.first_seen ? formatDate(node.first_seen) : null;
-  const title = `${alias} — Lightning Node Profile`;
+  const grade = gradeForNode(
+    {
+      publicKey: (node.public_key || pubkey).toLowerCase(),
+      capacity: node.capacity,
+      channels: node.active_channel_count,
+      firstSeen: node.first_seen,
+    },
+    snapshot,
+  );
+  const title = grade
+    ? `${alias} — ${grade.letter} (${grade.score}/100)`
+    : `${alias} — Lightning Node Profile`;
   const descriptionParts = [
+    grade ? `Report card ${grade.letter}, ${grade.score} out of 100.` : null,
     `${alias} is a public Lightning Network node holding ${capacityBtc} BTC across ${channels} active channels.`,
     country ? `Hosted in ${country}${isp ? ` on ${isp}` : ""}.` : isp ? `Hosted on ${isp}.` : null,
     firstSeen ? `First seen ${firstSeen}.` : null,
@@ -117,8 +144,12 @@ export default async function NodePage({
   const { pubkey } = await params;
 
   let profile: NodeProfile;
+  let snapshot: GradeSnapshot | null = null;
   try {
-    profile = await loadNodeProfile(pubkey);
+    [profile, snapshot] = await Promise.all([
+      loadNodeProfile(pubkey),
+      getGradeSnapshot(),
+    ]);
   } catch (err) {
     unstable_rethrow(err);
     console.warn(
@@ -203,10 +234,27 @@ export default async function NodePage({
     .slice(0, 24);
 
   const nodeAlias = (node.alias || "Anonymous").trim();
+  const grade = gradeForNode(
+    {
+      publicKey: (node.public_key || pubkey).toLowerCase(),
+      capacity: node.capacity,
+      channels: node.active_channel_count,
+      firstSeen: node.first_seen,
+    },
+    snapshot,
+  );
+  const fee = feeMarkFromRates(
+    (openPage ?? []).map((channel) => channel.fee_rate),
+    snapshot?.medFeeRate ?? 0,
+  );
+  const shareUrl = gradeShareUrl(pubkey, SITE_URL);
+  const shareText = grade
+    ? gradeShareText(nodeAlias, grade.letter, grade.score)
+    : "";
   const jsonLd = [
     datasetJsonLd({
       name: `${nodeAlias} — Lightning Node`,
-      description: `Public Lightning Network node ${nodeAlias} (${pubkey.slice(0, 12)}…) with ${formatSats(node.capacity)} BTC capacity across ${formatNumber(node.active_channel_count)} active channels.`,
+      description: `Public Lightning Network node ${nodeAlias} (${pubkey.slice(0, 12)}…) with ${formatSats(node.capacity)} BTC capacity across ${formatNumber(node.active_channel_count)} active channels.${grade ? ` Report card ${grade.letter} (${grade.score}/100).` : ""}`,
       path: `/nodes/${pubkey}`,
       lastModified: node.updated_at,
       keywords: [
@@ -260,6 +308,15 @@ export default async function NodePage({
           </div>
         </div>
       </div>
+
+      {grade && (
+        <GradeCard
+          grade={grade}
+          fee={fee}
+          intentHref={xIntentHref(shareText, shareUrl)}
+          shareUrl={shareUrl}
+        />
+      )}
 
       {/* KPI row */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-[1px] bg-[color:var(--rule)] rule-b shrink-0">

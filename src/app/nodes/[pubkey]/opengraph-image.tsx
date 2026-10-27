@@ -1,7 +1,9 @@
 import { ImageResponse } from "next/og";
 import { api, safe, formatSats, formatNumber } from "@/lib/api";
+import { getGradeSnapshot } from "@/lib/grade-data";
+import { gradeForNode, letterColor } from "@/lib/grade";
 
-export const alt = "Lightning Node profile on ln.fyi";
+export const alt = "Lightning node grade on ln.fyi";
 export const revalidate = 86400;
 export const maxDuration = 15;
 export const size = { width: 1200, height: 630 };
@@ -10,9 +12,13 @@ export const contentType = "image/png";
 export default async function Image({
   params,
 }: {
-  params: { pubkey: string };
+  params: Promise<{ pubkey: string }>;
 }) {
-  const node = await safe(api.node(params.pubkey));
+  const { pubkey } = await params;
+  const [node, snapshot] = await Promise.all([
+    safe(api.node(pubkey)),
+    getGradeSnapshot(),
+  ]);
 
   const alias = (node?.alias || "ANONYMOUS").toUpperCase().slice(0, 32);
   const capacity = node ? formatSats(node.capacity) : "—";
@@ -25,6 +31,18 @@ export default async function Image({
   const colorRaw = node?.color;
   const accent =
     colorRaw && /^#[0-9a-f]{6}$/i.test(colorRaw) ? colorRaw : "#ff8a3d";
+  const grade = node
+    ? gradeForNode(
+        {
+          publicKey: (node.public_key || pubkey).toLowerCase(),
+          capacity: node.capacity,
+          channels: node.active_channel_count,
+          firstSeen: node.first_seen,
+        },
+        snapshot,
+      )
+    : null;
+  const gradeColor = grade ? letterColor(grade.letter) : accent;
 
   return new ImageResponse(
     (
@@ -45,22 +63,62 @@ export default async function Image({
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 20,
-            fontSize: 26,
-            color: "#aca99d",
-            letterSpacing: 4,
-            textTransform: "uppercase",
+            justifyContent: "space-between",
+            width: "100%",
           }}
         >
-          <span
+          <div
             style={{
-              width: 20,
-              height: 20,
-              borderRadius: 999,
-              background: accent,
+              display: "flex",
+              alignItems: "center",
+              gap: 20,
+              fontSize: 26,
+              color: "#aca99d",
+              letterSpacing: 4,
+              textTransform: "uppercase",
             }}
-          />
-          <span>§ Lightning Node Profile</span>
+          >
+            <span
+              style={{
+                width: 20,
+                height: 20,
+                borderRadius: 999,
+                background: accent,
+              }}
+            />
+            <span>§ Lightning Node Profile</span>
+          </div>
+          {grade && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "baseline",
+                gap: 16,
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 22,
+                  letterSpacing: 3,
+                  color: "#aca99d",
+                }}
+              >
+                GRADE
+              </span>
+              <span
+                style={{
+                  fontSize: 88,
+                  fontWeight: 700,
+                  color: gradeColor,
+                  lineHeight: 0.85,
+                  letterSpacing: -2,
+                }}
+              >
+                {grade.letter}
+              </span>
+              <span style={{ fontSize: 32, color: "#b9b2a2" }}>{grade.score}</span>
+            </div>
+          )}
         </div>
 
         <div
@@ -72,7 +130,7 @@ export default async function Image({
         >
           <div
             style={{
-              fontSize: alias.length > 16 ? 110 : 140,
+              fontSize: alias.length > 16 ? 96 : 124,
               fontWeight: 700,
               letterSpacing: -4,
               lineHeight: 1,

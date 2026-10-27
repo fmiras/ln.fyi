@@ -1,5 +1,23 @@
 import type { Metadata } from "next";
 
+/**
+ * Search-console tokens. Rendered only when the env var is set, so a deploy
+ * without them does not emit empty verification tags. Google reads
+ * `google-site-verification`. Bing reads `msvalidate.01`.
+ */
+export function siteVerification(env: {
+  GOOGLE_SITE_VERIFICATION?: string;
+  BING_SITE_VERIFICATION?: string;
+}): Metadata["verification"] | undefined {
+  const google = env.GOOGLE_SITE_VERIFICATION?.trim();
+  const bing = env.BING_SITE_VERIFICATION?.trim();
+  if (!google && !bing) return undefined;
+  return {
+    ...(google ? { google } : {}),
+    ...(bing ? { other: { "msvalidate.01": bing } } : {}),
+  };
+}
+
 export const SITE_URL = "https://ln.fyi";
 export const SITE_NAME = "ln.fyi";
 export const SITE_TAGLINE = "An editorial atlas of the Lightning Network";

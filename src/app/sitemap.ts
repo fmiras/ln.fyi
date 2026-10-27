@@ -20,6 +20,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticUrls: MetadataRoute.Sitemap = [
     { url: `${SITE_URL}/`, lastModified: now, changeFrequency: "hourly", priority: 1.0 },
     { url: `${SITE_URL}/nodes`, lastModified: now, changeFrequency: "hourly", priority: 0.9 },
+    { url: `${SITE_URL}/grades`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
     { url: `${SITE_URL}/countries`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
     { url: `${SITE_URL}/isp`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
     { url: `${SITE_URL}/about`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
@@ -56,7 +57,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.5,
     }));
 
-  // Union of all three ranking endpoints — unique pubkeys only
+  // Union of the three top-100 ranking endpoints. That is at most 300 node
+  // URLs. Google's limit is 50,000 URLs and 50 MB, so the whole sitemap,
+  // including countries, ISPs, and alias redirects, stays inside it. The
+  // slice is a guard if a ranking list ever grows.
   const pubkeys = new Set<string>();
   for (const list of [liq, conn, old]) {
     if (!list) continue;
@@ -75,5 +79,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...ispUrls,
     ...nodeUrls,
     ...aliasUrls,
-  ];
+  ].slice(0, 50_000);
 }

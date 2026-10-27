@@ -18,6 +18,9 @@ Live at **[ln.fyi](https://ln.fyi)**.
 - **Node profiles** — per-node capacity/channel history, server metadata
   (AS, geo, Tor/clearnet sockets), and a public onchain transactions feed
   reconstructed from channel opens and closes.
+- **Report cards** — a public 0–100 grade (A+ to F) from the daily ranking
+  snapshot: capacity, channels, connectivity rank, and age. Shown on the node
+  page, its share image, and a top-20 list at `/grades`.
 
 ## Stack
 
@@ -55,6 +58,8 @@ Open <http://localhost:3000>.
 | --- | --- | --- |
 | `MEMPOOL_PROVIDERS` | emzy, then mempool.space | Comma-separated Lightning API bases, tried in order |
 | `NEXT_PUBLIC_MEMPOOL_BASE` | unset | Legacy single base. A public instance stays primary and the other public instance is kept as backup. A custom URL is used alone. |
+| `GOOGLE_SITE_VERIFICATION` | unset | Google Search Console token. Emitted as `google-site-verification` only when set. |
+| `BING_SITE_VERIFICATION` | unset | Bing Webmaster token. Emitted as `msvalidate.01` only when set. |
 
 ## Project layout
 
@@ -77,6 +82,12 @@ primary directory answers. Each upstream call has a 4 second budget and
 fails over to the next provider after about 2 seconds, so a hung host cannot
 hold the render. The node document is loaded once per request and shared
 with `generateMetadata`. The top 20 nodes by capacity are prerendered.
+
+Node grades read one daily snapshot of the primary ranking lists (capacity,
+connectivity, age) and the network median. That snapshot does not fail over
+to mempool.space, whose Lightning data lags, and it does not add a per-node
+fetch. A fee sample from channels the profile already loaded is shown beside
+the grade and is not part of the number.
 
 A profile is cached as missing only when the pubkey is impossible, the
 upstream API returns 404, or mempool's node route answers
