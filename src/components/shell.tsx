@@ -4,7 +4,9 @@ import { LiveTick } from "./live-tick";
 const NAV = [
   { href: "/", label: "OVERVIEW", num: "01" },
   { href: "/nodes", label: "NODES", num: "02" },
-  { href: "/about", label: "ABOUT", num: "04" },
+  { href: "/movers", label: "MOVERS", num: "03" },
+  { href: "/recommend", label: "PEERS", num: "04" },
+  { href: "/about", label: "ABOUT", num: "05" },
 ];
 
 export function Shell({ children }: { children: React.ReactNode }) {
@@ -60,7 +62,7 @@ function TopBar() {
           <Link
             key={item.href}
             href={item.href}
-            className="group flex-1 flex items-center justify-center gap-1.5 py-2.5 border-r border-[color:var(--rule)] last:border-r-0 hover:bg-[#ffffff04] transition-colors min-w-[80px]"
+            className="group flex shrink-0 items-center justify-center gap-1.5 px-3 py-2.5 border-r border-[color:var(--rule)] last:border-r-0 hover:bg-[#ffffff04] transition-colors"
           >
             <span className="mono-xs text-paper-faint group-hover:text-amber">
               {item.num}
