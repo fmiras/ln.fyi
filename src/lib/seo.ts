@@ -10,6 +10,7 @@ type MetaArgs = {
   path: string;
   image?: string;
   noindex?: boolean;
+  nofollow?: boolean;
 };
 
 export function buildMetadata({
@@ -18,6 +19,7 @@ export function buildMetadata({
   path,
   image,
   noindex,
+  nofollow,
 }: MetaArgs): Metadata {
   const url = `${SITE_URL}${path}`;
   const images = image
@@ -27,9 +29,10 @@ export function buildMetadata({
     title,
     description,
     alternates: { canonical: url },
-    robots: noindex
-      ? { index: false, follow: true }
-      : { index: true, follow: true },
+    robots: {
+      index: !noindex,
+      follow: !nofollow,
+    },
     openGraph: {
       title,
       description,

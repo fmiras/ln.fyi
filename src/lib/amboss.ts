@@ -45,6 +45,70 @@ query ($pubkey: String!) {
   }
 }`;
 
+export type AmbossRankRow = {
+  pubkey: string;
+  rank: number;
+  /** Weekly rank change. Positive means the node moved up the list. */
+  week: number;
+};
+
+const RANK_QUERY = `
+query {
+  getRankLists {
+    capacity { pubkey rank rank_change { week } }
+    channels { pubkey rank rank_change { week } }
+  }
+}`;
+
+/**
+ * One public Amboss call: weekly rank movement for its published top lists.
+ * Mempool does not serve historical rank. Cached for a day; failures are empty.
+ */
+export async function ambossRankLists(): Promise<{
+  capacity: AmbossRankRow[];
+  channels: AmbossRankRow[];
+} | null> {
+  try {
+    const res = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ query: RANK_QUERY }),
+      next: { revalidate: 86400 },
+      signal: AbortSignal.timeout(AMBOSS_TIMEOUT_MS),
+    });
+    if (!res.ok) return null;
+    const body = (await res.json()) as {
+      data?: {
+        getRankLists?: {
+          capacity?: { pubkey?: string; rank?: number; rank_change?: { week?: number } }[];
+          channels?: { pubkey?: string; rank?: number; rank_change?: { week?: number } }[];
+        };
+      };
+      errors?: unknown;
+    };
+    if (body.errors || !body.data?.getRankLists) return null;
+    const map = (
+      rows: { pubkey?: string; rank?: number; rank_change?: { week?: number } }[] | undefined,
+    ): AmbossRankRow[] =>
+      (rows ?? [])
+        .filter((row) => !!row.pubkey && Number.isFinite(row.rank))
+        .map((row) => ({
+          pubkey: row.pubkey as string,
+          rank: row.rank as number,
+          week: Number.isFinite(row.rank_change?.week) ? (row.rank_change?.week as number) : 0,
+        }));
+    return {
+      capacity: map(body.data.getRankLists.capacity),
+      channels: map(body.data.getRankLists.channels),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function ambossNode(pubkey: string): Promise<AmbossNode | null> {
   try {
     const res = await fetch(ENDPOINT, {

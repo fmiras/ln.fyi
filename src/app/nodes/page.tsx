@@ -51,6 +51,14 @@ export default async function NodesPage({
             Top one hundred Lightning nodes by liquidity, connectivity or age.
             Tap any row to open its profile.
           </p>
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
+            <Link href="/movers" className="mono-xs text-amber hover:text-paper transition-colors">
+              WEEKLY MOVERS
+            </Link>
+            <Link href="/recommend" className="mono-xs text-amber hover:text-paper transition-colors">
+              WHO TO PEER WITH
+            </Link>
+          </div>
         </div>
         <div className="mono-xs text-paper-faint tabular md:pb-1">
           {active.length} NODES · LIVE

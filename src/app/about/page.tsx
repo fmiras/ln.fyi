@@ -17,7 +17,7 @@ export default function About() {
       {/* Page header */}
       <div className="rule-b px-4 md:px-8 lg:px-12 py-4 md:py-8 flex flex-col md:flex-row md:items-end md:justify-between gap-3">
         <div>
-          <div className="mono-xs text-amber mb-2">§ 04 · ABOUT</div>
+          <div className="mono-xs text-amber mb-2">§ 05 · ABOUT</div>
           <h1 className="display text-[28px] md:text-[64px] lg:text-[88px] leading-[0.9] text-paper">
             ln.fyi / OPEN<br className="hidden md:block" /> LIGHTNING ATLAS
           </h1>
@@ -124,7 +124,19 @@ export default function About() {
                 href="/nodes"
                 num="02"
                 label="NODES"
-                description="Every public Lightning node, ranked by liquidity, connectivity or age. Searchable; click any row for the node&rsquo;s full profile."
+                description="Every public Lightning node, ranked by liquidity, connectivity or age. Searchable; click any row for the node&rsquo;s full profile and report card."
+              />
+              <NavItem
+                href="/movers"
+                num="05"
+                label="MOVERS"
+                description="Who gained or lost the most capacity, channels, or rank this week. Refreshed daily."
+              />
+              <NavItem
+                href="/recommend"
+                num="06"
+                label="PEERS"
+                description="Paste a pubkey and get a short list of well-connected nodes you are not already peered with."
               />
               <NavItem
                 href="/countries"

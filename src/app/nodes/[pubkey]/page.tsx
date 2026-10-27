@@ -13,11 +13,9 @@ import {
 } from "@/lib/api";
 import { AreaChart } from "@/components/chart";
 import { Panel } from "@/components/panel";
-import {
-  capRouteRevalidate,
-  loadNodeProfile,
-  type NodeProfile,
-} from "@/lib/node-profile";
+import { ReportCard } from "@/components/report-card";
+import { capRouteRevalidate } from "@/lib/node-profile";
+import { loadNodeGrade } from "@/lib/node-report";
 import {
   SITE_NAME,
   breadcrumbJsonLd,
@@ -72,16 +70,17 @@ export async function generateMetadata({
   params: Promise<{ pubkey: string }>;
 }): Promise<Metadata> {
   const { pubkey } = await params;
-  let profile: NodeProfile;
+  let loaded;
   try {
-    profile = await loadNodeProfile(pubkey);
+    loaded = await loadNodeGrade(pubkey);
   } catch (err) {
     unstable_rethrow(err);
     await capRouteRevalidate(UNAVAILABLE_REVALIDATE_SECONDS);
     return unavailableMetadata(pubkey);
   }
-  if (profile.status !== "ready") return unavailableMetadata(pubkey);
-  const node = profile.node;
+  if (loaded.status !== "ready") return unavailableMetadata(pubkey);
+  const node = loaded.profile.node;
+  const grade = loaded.grade;
   const alias = (node.alias || "Anonymous").trim();
   const country =
     node.country && typeof node.country === "object"
@@ -93,7 +92,8 @@ export async function generateMetadata({
   const firstSeen = node.first_seen ? formatDate(node.first_seen) : null;
   const title = `${alias} — Lightning Node Profile`;
   const descriptionParts = [
-    `${alias} is a public Lightning Network node holding ${capacityBtc} BTC across ${channels} active channels.`,
+    `${alias} scores ${grade.letter} (${grade.score}/100) on the ln.fyi report card. ${grade.summary}`,
+    `Public capacity ${capacityBtc} BTC across ${channels} active channels.`,
     country ? `Hosted in ${country}${isp ? ` on ${isp}` : ""}.` : isp ? `Hosted on ${isp}.` : null,
     firstSeen ? `First seen ${firstSeen}.` : null,
   ]
@@ -116,9 +116,9 @@ export default async function NodePage({
 }) {
   const { pubkey } = await params;
 
-  let profile: NodeProfile;
+  let loaded;
   try {
-    profile = await loadNodeProfile(pubkey);
+    loaded = await loadNodeGrade(pubkey);
   } catch (err) {
     unstable_rethrow(err);
     console.warn(
@@ -128,8 +128,13 @@ export default async function NodePage({
     await capRouteRevalidate(UNAVAILABLE_REVALIDATE_SECONDS);
     return <NodeUnavailable pubkey={pubkey} />;
   }
-  if (profile.status === "not-found") notFound();
+  if (loaded.status === "not-found") notFound();
+  if (loaded.status !== "ready") {
+    await capRouteRevalidate(UNAVAILABLE_REVALIDATE_SECONDS);
+    return <NodeUnavailable pubkey={pubkey} />;
+  }
 
+  const { profile, grade } = loaded;
   const { node, stats, tip: tipHeight, opens: openPage, closes: closedPage, amboss } =
     profile;
 
@@ -227,10 +232,10 @@ export default async function NodePage({
 
   return (
     <div
-      className="flex-1 flex flex-col min-h-0 overflow-auto md:overflow-hidden"
+      className="flex-1 flex flex-col min-h-0 overflow-auto"
       data-provider={profile.source}
     >
-      {/* Header — compact, single-line on desktop so the dashboard fits in the viewport */}
+      {/* Header */}
       <div className="rule-b px-4 md:px-6 lg:px-8 py-3 md:py-4 shrink-0">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-6">
           <div className="min-w-0 flex-1">
@@ -260,6 +265,18 @@ export default async function NodePage({
           </div>
         </div>
       </div>
+
+      <ReportCard
+        grade={grade}
+        alias={nodeAlias}
+        pubkey={pubkey}
+        color={colorFill}
+        aside={
+          node.opened_channel_count != null
+            ? `Lifetime ${formatNumber(node.opened_channel_count)} opened and ${formatNumber(node.closed_channel_count ?? 0)} closed. Closures are not part of the grade.`
+            : undefined
+        }
+      />
 
       {/* KPI row */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-[1px] bg-[color:var(--rule)] rule-b shrink-0">
@@ -292,7 +309,7 @@ export default async function NodePage({
       </div>
 
       {/* Body grid: 2×2. Left column is charts, right column is metadata + tx feed. */}
-      <div className="flex flex-col md:flex-1 md:min-h-0 md:grid md:grid-cols-12 md:grid-rows-2 md:gap-[1px] md:bg-[color:var(--rule)]">
+      <div className="flex flex-col md:h-[70vh] md:min-h-[560px] md:grid md:grid-cols-12 md:grid-rows-2 md:gap-[1px] md:bg-[color:var(--rule)]">
         {/* Top-left: capacity chart */}
         <div className="bg-ink h-[280px] md:h-auto md:col-span-8 md:row-span-1 rule-b md:border-b-0">
           <Panel
